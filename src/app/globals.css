@@ -1,26 +1,124 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─────────────────────────────────────────────
+   Taskify Design Tokens
+   All custom design tokens live here under @theme.
+   Tailwind v4 reads this block and auto-generates
+   utility classes like bg-forest, text-sage, etc.
+   No tailwind.config.js needed!
+───────────────────────────────────────────── */
+@theme {
+  /* ── Brand: Forest & Sage ── */
+  --color-forest:            #1F332D;  /* Sidebar bg, dark accents, primary brand */
+  --color-forest-dark:       #091E19;  /* Hover states on forest elements */
+  --color-forest-light:      #2C483F;  /* Lighter forest variant */
+  --color-sage:              #588176;  /* Primary buttons, active nav, focus rings */
+  --color-sage-dark:         #3D665C;  /* Sage hover states */
+  --color-sage-badge:        #3A5A40;  /* Active day pill, countdown badges */
+  --color-sage-light:        #EAF2EF;  /* P1 priority wash, tag backgrounds */
+
+  /* ── Surface / Paper ── */
+  --color-paper:             #F8F9FA;  /* App canvas background (warm off-white) */
+  --color-paper-card:        #FFFFFF;  /* Task cards, modals, input fields */
+  --color-paper-dim:         #E5E7EB;  /* Hairline borders, dividers, card outlines */
+
+  /* ── Text ── */
+  --color-slate-charcoal:    #2B2D42;  /* Primary body text, headings */
+  --color-slate-muted:       #6C757D;  /* Metadata, timestamps, subtext */
+
+  /* ── Priority: P0 Urgent (blush red) ── */
+  --color-priority-p0-bg:     #F9EBEB;
+  --color-priority-p0-text:   #C97A7A;
+  --color-priority-p0-border: #F2C4C4;
+
+  /* ── Priority: P1 High (mint green) ── */
+  --color-priority-p1-bg:     #EAF2EF;
+  --color-priority-p1-text:   #588176;
+  --color-priority-p1-border: #C0ECDE;
+
+  /* ── Priority: P2 Normal (warm stone) ── */
+  --color-priority-p2-bg:     #F4F1EA;
+  --color-priority-p2-text:   #A39B8B;
+  --color-priority-p2-border: #E3DEC3;
+
+  /* ── Priority: Staged (amber) ── */
+  --color-priority-staged-bg:     #FBF0E4;
+  --color-priority-staged-text:   #D49B57;
+  --color-priority-staged-border: #F0D5B8;
+
+  /* ── Typography ── */
+  --font-sans: var(--font-inter);
+
+  /* ── Shadows ── */
+  --shadow-xs:   0 1px 3px rgba(31, 51, 45, 0.04);  /* Standard card float */
+  --shadow-drag: 0 8px 16px -4px rgba(31, 51, 45, 0.12); /* Active drag state */
+  --shadow-glass: 0 20px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2);
+
+  /* ── Border Radius ── */
+  --radius-card:  8px;   /* Task cards, buttons, inputs */
+  --radius-modal: 16px;  /* Flyouts, modals, large containers */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ── Apple Liquid Glass Utility Classes ── */
+@layer utilities {
+  /* Dark Liquid Glass (Sidebar) - Vibrant Deep Forest Glass */
+  .liquid-glass-dark {
+    background: linear-gradient(
+      165deg,
+      rgba(38, 62, 55, 0.92) 0%,
+      rgba(25, 43, 37, 0.95) 50%,
+      rgba(15, 27, 23, 0.98) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4),
+      0 12px 32px -8px rgba(0, 0, 0, 0.35);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Light Liquid Glass (Header & Cards) - Crisp Bright Porcelain Glass */
+  .liquid-glass-light {
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(248, 250, 249, 0.88) 100%
+    );
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
+      0 4px 20px -4px rgba(31, 51, 45, 0.08),
+      0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Active Capsule / Lens Bubble - Vibrant Deep Work Pill */
+  .liquid-glass-active {
+    background: linear-gradient(
+      180deg,
+      rgba(88, 129, 118, 0.95) 0%,
+      rgba(58, 90, 80, 0.95) 100%
+    );
+    box-shadow:
+      inset 0 1.5px 1.5px rgba(255, 255, 255, 0.4),
+      inset 0 -1.5px 2px rgba(0, 0, 0, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.35);
   }
 }
 
+/* ── Base Styles ── */
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-slate-charcoal);
+  font-family: var(--font-inter, Arial, Helvetica, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
