@@ -13,6 +13,7 @@ import {
   X,
   Flame,
   CheckCheck,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ interface SidebarProps {
 interface NavItem {
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
 }
 
 const NAV_ITEMS: NavItem[] = [

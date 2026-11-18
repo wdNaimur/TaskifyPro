@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Play, Pause, RotateCcw, ChevronUp, ChevronDown, Timer, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { usePomodoroStore, PomodoroMode } from "@/lib/store";
+import { usePomodoroStore, PomodoroMode } from "@/lib/stores/pomodoroStore";
 import { cn } from "@/lib/utils";
 
 export function FloatingPomodoro() {
