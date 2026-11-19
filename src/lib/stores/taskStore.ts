@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Task, TaskStatus } from "@/types";
+import { INITIAL_SEED_TASKS, ENABLE_DEMO_SEED_DATA } from "@/lib/constants";
 
 interface TaskState {
   tasks: Task[];
@@ -12,77 +13,17 @@ interface TaskState {
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTaskDone: (id: string) => void;
+  toggleSubItem: (taskId: string, subItemId: string) => void;
   moveTaskToToday: (id: string) => void;
+  incrementCounter: (id: string) => void;
+  addTimeToTask: (id: string, minutes: number) => void;
+  resetToSeedData: () => void;
 }
-
-const INITIAL_TASKS: Task[] = [
-  {
-    id: "task-1",
-    title: "Review Sprint Architecture & Layout",
-    archetype: "pomodoro",
-    priority: "P0",
-    status: "scheduled",
-    pomodoroCount: 2,
-    scheduledDate: new Date().toISOString().split("T")[0],
-    slotIndex: 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-2",
-    title: "Reply to team design feedback",
-    archetype: "quick-check",
-    priority: "P1",
-    status: "scheduled",
-    subItems: [
-      { id: "sub-1", label: "Check Figma comments", done: true },
-      { id: "sub-2", label: "Send summary on Slack", done: false },
-    ],
-    scheduledDate: new Date().toISOString().split("T")[0],
-    slotIndex: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-3",
-    title: "Configure Tailwind liquid glass tokens",
-    archetype: "short",
-    priority: "P1",
-    status: "done",
-    durationMinutes: 30,
-    scheduledDate: new Date().toISOString().split("T")[0],
-    slotIndex: 2,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-4",
-    title: "Mobile navigation drawer edge-case tests",
-    archetype: "short",
-    priority: "P2",
-    status: "scheduled",
-    durationMinutes: 20,
-    scheduledDate: new Date().toISOString().split("T")[0],
-    slotIndex: 3,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-5",
-    title: "Quarterly Roadmapping & Feature Specs",
-    archetype: "epic",
-    priority: "P1",
-    status: "staged",
-    milestones: ["Auth Flow Spec", "Reports Engine", "IndexedDB Offline Sync"],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
 
 export const useTaskStore = create<TaskState>()(
   persist(
     (set) => ({
-      tasks: INITIAL_TASKS,
+      tasks: ENABLE_DEMO_SEED_DATA ? INITIAL_SEED_TASKS : [],
       selectedTab: "daily",
       setSelectedTab: (tab) => set({ selectedTab: tab }),
 
@@ -128,6 +69,24 @@ export const useTaskStore = create<TaskState>()(
         }));
       },
 
+      toggleSubItem: (taskId, subItemId) => {
+        set((state) => ({
+          tasks: state.tasks.map((task) => {
+            if (task.id === taskId && task.subItems) {
+              const nextSubItems = task.subItems.map((sub) =>
+                sub.id === subItemId ? { ...sub, done: !sub.done } : sub
+              );
+              return {
+                ...task,
+                subItems: nextSubItems,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return task;
+          }),
+        }));
+      },
+
       moveTaskToToday: (id) => {
         set((state) => ({
           tasks: state.tasks.map((task) =>
@@ -142,9 +101,55 @@ export const useTaskStore = create<TaskState>()(
           ),
         }));
       },
+
+      incrementCounter: (id) => {
+        set((state) => ({
+          tasks: state.tasks.map((task) => {
+            if (task.id === id && task.archetype === "counter") {
+              const current = task.currentCount || 0;
+              const target = task.targetCount || 1;
+              const nextCount = Math.min(target, current + 1);
+              const isNowDone = nextCount >= target;
+
+              return {
+                ...task,
+                currentCount: nextCount,
+                status: isNowDone ? "done" : task.status,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return task;
+          }),
+        }));
+      },
+
+      addTimeToTask: (id, minutes) => {
+        set((state) => ({
+          tasks: state.tasks.map((task) => {
+            if (task.id === id && task.archetype === "timed") {
+              const prevCompleted = task.completedMinutes || 0;
+              const newCompleted = Math.max(0, prevCompleted + minutes);
+              const target = task.durationMinutes || 0;
+              const isNowDone = target > 0 && newCompleted >= target;
+
+              return {
+                ...task,
+                completedMinutes: newCompleted,
+                status: isNowDone ? "done" : task.status,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return task;
+          }),
+        }));
+      },
+
+      resetToSeedData: () => {
+        set({ tasks: INITIAL_SEED_TASKS });
+      },
     }),
     {
-      name: "taskify-tasks-storage", // localStorage key
+      name: "taskify-tasks-storage",
     }
   )
 );

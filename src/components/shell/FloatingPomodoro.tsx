@@ -1,21 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, Pause, RotateCcw, ChevronUp, ChevronDown, Timer, Coffee } from "lucide-react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronUp,
+  ChevronDown,
+  Timer,
+  Coffee,
+  Square,
+  Sparkles,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { usePomodoroStore, PomodoroMode } from "@/lib/stores/pomodoroStore";
+import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
+import { FocusSetupModal } from "@/components/focus/FocusSetupModal";
 import { cn } from "@/lib/utils";
 
 export function FloatingPomodoro() {
   const {
+    isSessionActive,
     mode,
     timeLeft,
     isRunning,
     activeTaskTitle,
-    setMode,
+    totalParts,
+    currentPart,
+    openLauncher,
     startTimer,
     pauseTimer,
     resetTimer,
+    stopSession,
     tick,
   } = usePomodoroStore();
 
@@ -39,147 +54,175 @@ export function FloatingPomodoro() {
   const seconds = timeLeft % 60;
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
-  const modeLabels: Record<PomodoroMode, string> = {
-    work: "Focus",
-    shortBreak: "Short Break",
-    longBreak: "Long Break",
-  };
-
   return (
-    <div className="fixed bottom-4 right-4 z-40 select-none">
-      <motion.div
-        layout
-        className="liquid-glass-light rounded-2xl overflow-hidden shadow-2xl border border-white/60 p-2 sm:p-2.5 transition-all"
-        style={{ minWidth: "180px" }}
-      >
-        {/* ── Main Bar (Always Visible) ────────────────────────────── */}
-        <div className="flex items-center justify-between gap-3 px-1">
-          {/* Mode Icon & Timer Display */}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-2 text-left group focus:outline-hidden"
-            title={expanded ? "Collapse widget" : "Expand widget"}
-          >
-            <div
-              className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all shadow-inner",
-                mode === "work"
-                  ? "bg-sage text-white"
-                  : "bg-orange-500/20 text-orange-600"
-              )}
-            >
-              {mode === "work" ? (
-                <Timer className={cn("h-4 w-4", isRunning && "animate-pulse")} />
-              ) : (
-                <Coffee className="h-4 w-4" />
-              )}
-            </div>
+    <>
+      {/* ── Global Focus Setup Modal ─────────────────────────────── */}
+      <FocusSetupModal />
 
-            <div>
-              <div className="font-mono font-bold text-sm tracking-tight text-slate-800 leading-none">
-                {formattedTime}
+      {/* ── Bottom Right Corner Anchor ───────────────────────────── */}
+      <div className="fixed bottom-4 right-4 z-40 select-none">
+        <AnimatePresence mode="wait">
+          {!isSessionActive ? (
+            /* ── STATE 1: Idle — Simple "Start Focus" Button ──────── */
+            <motion.button
+              key="idle-button"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => openLauncher()}
+              className="liquid-glass-light hover:liquid-glass-active rounded-2xl px-3.5 py-2.5 shadow-xl border border-white/80 flex items-center gap-2.5 text-slate-800 transition-all font-semibold text-xs group cursor-pointer"
+              aria-label="Start Focus Session"
+            >
+              <div className="h-6 w-6 rounded-xl bg-forest text-white flex items-center justify-center group-hover:bg-forest-light transition-colors shadow-xs">
+                <Play className="h-3 w-3 fill-current ml-0.5" />
               </div>
-              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
-                {modeLabels[mode]}
-              </div>
-            </div>
-          </button>
-
-          {/* Quick Play/Pause & Expand Chevrons */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => (isRunning ? pauseTimer() : startTimer())}
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-sm transition-transform active:scale-95 focus:outline-hidden",
-                isRunning
-                  ? "bg-amber-600 hover:bg-amber-700"
-                  : "bg-forest hover:bg-forest-light"
-              )}
-              aria-label={isRunning ? "Pause timer" : "Start timer"}
-            >
-              {isRunning ? (
-                <Pause className="h-3.5 w-3.5 fill-current" />
-              ) : (
-                <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="flex h-8 w-6 items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 transition-colors focus:outline-hidden"
-              aria-label={expanded ? "Collapse" : "Expand"}
-            >
-              {expanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* ── Expanded Drawer ──────────────────────────────────────── */}
-        <AnimatePresence>
-          {expanded && (
+              <span className="font-bold tracking-tight">Start Focus</span>
+            </motion.button>
+          ) : (
+            /* ── STATE 2: Active Session — Timer Widget ───────────── */
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+              key="active-widget"
+              layout
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="liquid-glass-light rounded-2xl overflow-hidden shadow-2xl border border-white/70 p-2 sm:p-2.5 transition-all"
+              style={{ minWidth: "190px" }}
             >
-              <div className="pt-3 mt-2 border-t border-slate-200/60 space-y-2.5 px-1">
-                {/* Active Task (if any) */}
-                {activeTaskTitle ? (
-                  <div className="bg-white/60 rounded-xl p-2 border border-white/80">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">
-                      Working on
-                    </p>
-                    <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
-                      {activeTaskTitle}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-[11px] text-slate-400 italic px-1">
-                    No task actively linked
-                  </div>
-                )}
-
-                {/* Mode Selector Buttons */}
-                <div className="flex gap-1 bg-black/5 p-1 rounded-xl">
-                  {(["work", "shortBreak", "longBreak"] as PomodoroMode[]).map(
-                    (m) => (
-                      <button
-                        key={m}
-                        onClick={() => setMode(m)}
-                        className={cn(
-                          "flex-1 py-1 rounded-lg text-[10px] font-semibold transition-all focus:outline-hidden",
-                          mode === m
-                            ? "bg-white text-slate-800 shadow-xs"
-                            : "text-slate-500 hover:text-slate-800"
-                        )}
-                      >
-                        {m === "work" ? "Focus" : m === "shortBreak" ? "Short" : "Long"}
-                      </button>
-                    )
-                  )}
-                </div>
-
-                {/* Reset Action Button */}
-                <div className="flex justify-end pt-1">
-                  <button
-                    onClick={resetTimer}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-black/5 transition-colors"
+              {/* Main Bar */}
+              <div className="flex items-center justify-between gap-3 px-1">
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="flex items-center gap-2 text-left group focus:outline-hidden cursor-pointer"
+                  title={expanded ? "Collapse widget" : "Expand widget"}
+                >
+                  <div
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all shadow-inner",
+                      mode === "work"
+                        ? "bg-forest text-white"
+                        : "bg-amber-500 text-white"
+                    )}
                   >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Reset</span>
+                    {mode === "work" ? (
+                      <Timer className={cn("h-4 w-4", isRunning && "animate-pulse")} />
+                    ) : (
+                      <Coffee className="h-4 w-4" />
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="font-mono font-bold text-sm tracking-tight text-slate-800 leading-none">
+                      {formattedTime}
+                    </div>
+                    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
+                      {mode === "work"
+                        ? totalParts > 1
+                          ? `Part ${currentPart}/${totalParts}`
+                          : "Focus"
+                        : "Break"}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Quick Controls */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => (isRunning ? pauseTimer() : startTimer())}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-xs transition-transform active:scale-95 focus:outline-hidden cursor-pointer",
+                      isRunning
+                        ? "bg-amber-600 hover:bg-amber-700"
+                        : "bg-forest hover:bg-forest-light"
+                    )}
+                    aria-label={isRunning ? "Pause timer" : "Start timer"}
+                  >
+                    {isRunning ? (
+                      <Pause className="h-3.5 w-3.5 fill-current" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="flex h-8 w-6 items-center justify-center rounded-lg text-slate-400 hover:text-slate-800 transition-colors focus:outline-hidden cursor-pointer"
+                    aria-label={expanded ? "Collapse" : "Expand"}
+                  >
+                    {expanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
+
+              {/* Expanded Drawer */}
+              <AnimatePresence>
+                {expanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-2.5 mt-2 border-t border-slate-200/60 space-y-2 px-1">
+                      {/* Active Task (if linked) */}
+                      {activeTaskTitle ? (
+                        <div className="bg-white/70 rounded-xl p-2 border border-white/80">
+                          <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                            Focusing On
+                          </p>
+                          <p className="text-xs font-bold text-slate-800 truncate mt-0.5">
+                            {activeTaskTitle}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-slate-400 italic px-0.5">
+                          General focus session
+                        </div>
+                      )}
+
+                      {/* Part Progress Summary */}
+                      {totalParts > 1 && (
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 px-0.5">
+                          <span>Part Progress:</span>
+                          <span className="font-mono text-forest">
+                            {currentPart} of {totalParts} ({Math.round((currentPart / totalParts) * 100)}%)
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Action Buttons: Reset & End Session */}
+                      <div className="flex items-center justify-between pt-1 gap-1">
+                        <button
+                          onClick={resetTimer}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          <span>Reset</span>
+                        </button>
+
+                        <button
+                          onClick={stopSession}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                        >
+                          <Square className="h-3 w-3 fill-current" />
+                          <span>End Session</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
-    </div>
+      </div>
+    </>
   );
 }

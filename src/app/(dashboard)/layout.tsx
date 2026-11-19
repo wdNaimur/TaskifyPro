@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { Header } from "@/components/shell/Header";
 import { FloatingPomodoro } from "@/components/shell/FloatingPomodoro";
+import { ToastContainer } from "@/components/ui/ToastContainer";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,9 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#EEF2EF] p-2.5 sm:p-4 gap-3 sm:gap-4 antialiased">
+      {/* ── Toast Notifications ───────────────────────────────────── */}
+      <ToastContainer />
+
       {/* ── Persistent Floating Liquid Glass Sidebar ────────────────── */}
       <Sidebar
         desktopCollapsed={desktopCollapsed}

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useTaskStore } from "@/lib/stores/taskStore";
-import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { DailyPlanTab } from "@/components/manage/DailyPlanTab";
 import { WeeklyHorizonTab } from "@/components/manage/WeeklyHorizonTab";
 import { BacklogTab } from "@/components/manage/BacklogTab";
@@ -19,10 +18,8 @@ export default function ManagePage() {
     addTask,
     updateTask,
     deleteTask,
-    toggleTaskDone,
     moveTaskToToday,
   } = useTaskStore();
-  const { startTimer } = usePomodoroStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -115,8 +112,6 @@ export default function ManagePage() {
       {selectedTab === "daily" && (
         <DailyPlanTab
           tasks={todayTasks}
-          onToggleDone={toggleTaskDone}
-          onStartPomodoro={(id, title) => startTimer(id, title)}
           onEdit={handleOpenEditModal}
           onDelete={deleteTask}
           onOpenCreateModal={handleOpenCreateModal}

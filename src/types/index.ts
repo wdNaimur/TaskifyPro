@@ -4,14 +4,15 @@
 // Always import from "@/types" — never duplicate these elsewhere.
 // ─────────────────────────────────────────────────────────────────
 
-// ── Task Archetypes ──────────────────────────────────────────────
-// Each task in Taskify has one of four archetypes.
-// The archetype controls how the task looks and behaves.
+// ── Task Archetypes / Types ──────────────────────────────────────
+// Generalized into 3 practical modes:
+// 1. "checklist" — sub-items checklist (default)
+// 2. "counter"   — countable task with incremental [+] button (e.g. 5 glasses of water)
+// 3. "timed"     — interactive duration dial / slider
 export type TaskArchetype =
-  | "quick-check"    // ≤15 min checklist-style task
-  | "short"          // 15–45 min focused task
-  | "pomodoro"       // 1+ Pomodoro sessions (25 min blocks)
-  | "epic";          // Multi-day milestone with sub-tasks
+  | "checklist"   // Checklist with sub-items
+  | "counter"     // Countable target (e.g. 5 glasses, 10 pages)
+  | "timed";      // Freeform time duration via dial/slider
 
 // ── Priority Levels ──────────────────────────────────────────────
 export type Priority = "P0" | "P1" | "P2";
@@ -25,7 +26,7 @@ export type TaskStatus =
   | "missed"      // Scheduled but not completed — carryover candidate
   | "cancelled";
 
-// ── Sub-item (for Quick Check tasks) ─────────────────────────────
+// ── Sub-item (for Checklist tasks) ───────────────────────────────
 export interface SubItem {
   id: string;
   label: string;
@@ -40,17 +41,19 @@ export interface Task {
   priority: Priority;
   status: TaskStatus;
 
-  // Optional fields — only relevant for certain archetypes
-  durationMinutes?: number;    // short / pomodoro tasks
-  pomodoroCount?: number;      // how many 25-min sessions
-  subItems?: SubItem[];        // quick-check checklist items
-  milestones?: string[];       // epic breakdown steps
+  // Type-specific fields:
+  subItems?: SubItem[];         // for "checklist"
+  targetCount?: number;         // for "counter" (e.g. 5)
+  currentCount?: number;        // for "counter" (e.g. 2 / 5)
+  unit?: string;                // for "counter" (e.g. "glasses", "pages", "reps")
+  durationMinutes?: number;     // for "timed" target (e.g. 45 min)
+  completedMinutes?: number;    // for "timed" progress completed (e.g. 15 min)
 
-  scheduledDate?: string;      // ISO date string "YYYY-MM-DD"
-  slotIndex?: number;          // 0-indexed position in the day's 5 slots
+  scheduledDate?: string;       // ISO date string "YYYY-MM-DD"
+  slotIndex?: number;           // 0-indexed position in the day's 5 slots
 
-  createdAt: string;           // ISO timestamp
-  updatedAt: string;           // ISO timestamp
+  createdAt: string;            // ISO timestamp
+  updatedAt: string;            // ISO timestamp
 }
 
 // ── Habit Types ──────────────────────────────────────────────────

@@ -23,6 +23,9 @@ export function BacklogTab({
         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
           Staged Backlog Items ({tasks.length})
         </h4>
+        <span className="text-[11px] text-slate-400">
+          Triage &amp; promote tasks into today
+        </span>
       </div>
 
       {tasks.length === 0 ? (
@@ -36,6 +39,7 @@ export function BacklogTab({
           <TaskCard
             key={task.id}
             task={task}
+            mode="plan"
             variant="backlog"
             onMoveToToday={onMoveToToday}
             onEdit={onEdit}

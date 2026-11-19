@@ -3,13 +3,12 @@
 import { Calendar } from "lucide-react";
 import { Task } from "@/types";
 import { TaskCard } from "@/components/tasks/TaskCard";
+import { DEFAULT_TASK_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface DailyPlanTabProps {
   tasks: Task[];
   slotCapacity?: number;
-  onToggleDone: (id: string) => void;
-  onStartPomodoro: (id: string, title: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onOpenCreateModal: () => void;
@@ -17,14 +16,11 @@ interface DailyPlanTabProps {
 
 export function DailyPlanTab({
   tasks,
-  slotCapacity = 5,
-  onToggleDone,
-  onStartPomodoro,
+  slotCapacity = DEFAULT_TASK_CONFIG.slotCapacity,
   onEdit,
   onDelete,
   onOpenCreateModal,
 }: DailyPlanTabProps) {
-  const completedTodayCount = tasks.filter((t) => t.status === "done").length;
   const isFull = tasks.length >= slotCapacity;
 
   return (
@@ -44,11 +40,11 @@ export function DailyPlanTab({
                   : "bg-emerald-500/10 text-emerald-800 border-emerald-300"
               )}
             >
-              {tasks.length} / {slotCapacity} Slots Used
+              {tasks.length} / {slotCapacity} Slots Allocated
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            The rule of 5: Deep focus requires strictly guarding daily slots against cognitive overload.
+            The rule of 5: Guard today&apos;s allocation to ensure realistic focus. Execution takes place on the Tasks Cockpit.
           </p>
         </div>
 
@@ -56,16 +52,13 @@ export function DailyPlanTab({
         <div className="flex items-center gap-1.5">
           {Array.from({ length: slotCapacity }).map((_, i) => {
             const isFilled = i < tasks.length;
-            const isDone = i < completedTodayCount;
             return (
               <div
                 key={i}
                 className={cn(
                   "h-8 w-8 rounded-xl flex items-center justify-center font-bold text-xs border transition-all",
-                  isDone
-                    ? "bg-emerald-600 text-white border-emerald-700"
-                    : isFilled
-                    ? "bg-forest text-white border-forest-light"
+                  isFilled
+                    ? "bg-forest text-white border-forest-light shadow-xs"
                     : "bg-white/40 text-slate-400 border-slate-200/60"
                 )}
                 title={`Slot ${i + 1}`}
@@ -77,21 +70,21 @@ export function DailyPlanTab({
         </div>
       </div>
 
-      {/* ── Today's Execution Queue ─────────────────────────────────── */}
+      {/* ── Allocated Slots List (Management Mode) ─────────────────── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Execution Queue ({tasks.length})
+            Allocated Slots ({tasks.length} of {slotCapacity})
           </h4>
-          <span className="text-xs text-slate-400">
-            {completedTodayCount} Completed
+          <span className="text-[11px] text-slate-400">
+            Edit &amp; prioritize today&apos;s schedule
           </span>
         </div>
 
         {tasks.length === 0 ? (
           <div className="liquid-glass-light rounded-3xl p-10 text-center border border-white/80">
             <Calendar className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-700">No tasks scheduled for today</p>
+            <p className="text-sm font-semibold text-slate-700">No tasks allocated for today</p>
             <p className="text-xs text-slate-400 mt-1">
               Click &quot;Add Task&quot; or promote from your Backlog
             </p>
@@ -101,8 +94,7 @@ export function DailyPlanTab({
             <TaskCard
               key={task.id}
               task={task}
-              onToggleDone={onToggleDone}
-              onStartPomodoro={onStartPomodoro}
+              mode="plan"
               onEdit={onEdit}
               onDelete={onDelete}
             />
