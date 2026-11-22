@@ -14,6 +14,7 @@ This `plan/` folder is the internal engineering reference for the **Taskify web 
 | [`ROUTES.md`](./ROUTES.md) | App Router route map — every page, layout, and route group |
 | [`SPRINT_TRACKER.md`](./SPRINT_TRACKER.md) | Sprint-by-sprint delivery checklist aligned with the master plan |
 | [`DESIGN_TOKENS.md`](./DESIGN_TOKENS.md) | Tailwind v4 `@theme` tokens, color palette, typography scale |
+| [`UX_FIX_PLAN.md`](./UX_FIX_PLAN.md) | **UX audit fixes** — 15 bugs across 4 waves, with exact file targets and acceptance criteria |
 
 ---
 

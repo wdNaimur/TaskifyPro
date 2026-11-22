@@ -11,6 +11,7 @@ import {
   Sparkles,
   Plus,
   ArrowUpRight,
+  Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTaskStore } from "@/lib/stores/taskStore";
@@ -32,6 +33,7 @@ export default function TasksPage() {
 
   const {
     isSessionActive,
+    activeTaskId,
     activeTaskTitle,
     timeLeft,
     startSession,
@@ -46,6 +48,14 @@ export default function TasksPage() {
   const stagedTasks = tasks.filter((t) => t.status === "staged");
   const completedRatio = todayTasks.length > 0 ? (completedTasks.length / todayTasks.length) * 100 : 0;
 
+  // Check if a timer (timed) task exists for today, or if the active session is a timed task
+  const hasTimerTaskToday = todayTasks.some(
+    (t) => t.status !== "done" && t.archetype === "timed"
+  );
+  const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const shouldShowFocusBanner =
+    isSessionActive && (hasTimerTaskToday || activeTask?.archetype === "timed");
+
   // Format for active banner
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);
@@ -57,6 +67,7 @@ export default function TasksPage() {
   // 1-Click: Click Play on a task -> immediately starts focus and teleports to /focus
   const handleStartTaskFocus = (id: string, title: string) => {
     const found = tasks.find((t) => t.id === id);
+    if (!found || found.status === "done") return;
     startSession({
       taskId: id,
       taskTitle: title,
@@ -65,10 +76,15 @@ export default function TasksPage() {
     router.push("/focus");
   };
 
-  // Pull first staged backlog task to today
+  const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
+
+  // Pull highest priority staged backlog task to today
   const handlePullFromBacklog = () => {
     if (stagedTasks.length > 0) {
-      moveTaskToToday(stagedTasks[0].id);
+      const sorted = [...stagedTasks].sort(
+        (a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2)
+      );
+      moveTaskToToday(sorted[0].id);
     }
   };
 
@@ -83,7 +99,7 @@ export default function TasksPage() {
 
       {/* ── Active Focus Banner (Clean slim teleport bar) ─────────── */}
       <AnimatePresence>
-        {isSessionActive && (
+        {shouldShowFocusBanner && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -125,7 +141,7 @@ export default function TasksPage() {
 
         {/* Right side: Quick Add button + Progress Badge */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-          {todayTasks.length < 5 && (
+          {todayTasks.length < 5 ? (
             <button
               onClick={() => setIsTaskModalOpen(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-forest hover:bg-forest-light text-white rounded-2xl text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
@@ -133,6 +149,11 @@ export default function TasksPage() {
               <Plus className="h-3.5 w-3.5" />
               <span>Add Task</span>
             </button>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-300/40 text-amber-800 text-xs font-semibold">
+              <Lock className="h-3.5 w-3.5 text-amber-600" />
+              <span>5/5 — Day is full</span>
+            </div>
           )}
 
           {todayTasks.length > 0 && (

@@ -58,6 +58,15 @@ export const usePomodoroStore = create<PomodoroState>()(
       elapsedWorkSeconds: 0,
 
       startSession: (options = {}) => {
+        // Prevent starting focus for a task that is already completed
+        if (options.taskId) {
+          const task = useTaskStore.getState().tasks.find((t) => t.id === options.taskId);
+          if (task && task.status === "done") {
+            toast.warning("Cannot start focus: task is already completed!");
+            return;
+          }
+        }
+
         const focusMinutes = options.focusMinutes || DEFAULT_USER_SETTINGS.pomodoroDuration;
         const breakMinutes = options.breakMinutes || DEFAULT_USER_SETTINGS.shortBreak;
 
@@ -129,6 +138,15 @@ export const usePomodoroStore = create<PomodoroState>()(
 
       startTimer: (taskId?: string, taskTitle?: string) => {
         const state = get();
+        const targetTaskId = taskId !== undefined ? taskId : state.activeTaskId;
+        if (targetTaskId) {
+          const task = useTaskStore.getState().tasks.find((t) => t.id === targetTaskId);
+          if (task && task.status === "done") {
+            toast.warning("Cannot start focus: task is already completed!");
+            return;
+          }
+        }
+
         set({
           isRunning: true,
           activeTaskId: taskId !== undefined ? taskId : state.activeTaskId,
@@ -157,8 +175,15 @@ export const usePomodoroStore = create<PomodoroState>()(
         const { timeLeft, isRunning, mode, activeTaskId, elapsedWorkSeconds, completeSession } = get();
         if (!isRunning) return;
 
-        // If actively focusing on a task, credit 1 minute for every 60 seconds
+        // If actively focusing on a task, check if it became done
         if (mode === "work" && activeTaskId) {
+          const task = useTaskStore.getState().tasks.find((t) => t.id === activeTaskId);
+          if (task && task.status === "done") {
+            get().stopSession();
+            toast.info("Task completed! Focus session ended.");
+            return;
+          }
+
           const nextElapsed = (elapsedWorkSeconds || 0) + 1;
           if (nextElapsed >= 60) {
             useTaskStore.getState().addTimeToTask(activeTaskId, 1);

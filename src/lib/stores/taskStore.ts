@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Task, TaskStatus } from "@/types";
 import { INITIAL_SEED_TASKS, ENABLE_DEMO_SEED_DATA } from "@/lib/constants";
+import { useToastStore } from "./toastStore";
 
 interface TaskState {
   tasks: Task[];
@@ -22,7 +23,7 @@ interface TaskState {
 
 export const useTaskStore = create<TaskState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       tasks: ENABLE_DEMO_SEED_DATA ? INITIAL_SEED_TASKS : [],
       selectedTab: "daily",
       setSelectedTab: (tab) => set({ selectedTab: tab }),
@@ -48,9 +49,19 @@ export const useTaskStore = create<TaskState>()(
       },
 
       deleteTask: (id) => {
+        const target = get().tasks.find((t) => t.id === id);
+        if (!target) return;
+
         set((state) => ({
           tasks: state.tasks.filter((task) => task.id !== id),
         }));
+
+        useToastStore.getState().addToast(`Deleted "${target.title}"`, "info", {
+          label: "Undo",
+          onClick: () => {
+            set((state) => ({ tasks: [target, ...state.tasks] }));
+          },
+        });
       },
 
       toggleTaskDone: (id) => {
@@ -72,17 +83,30 @@ export const useTaskStore = create<TaskState>()(
       toggleSubItem: (taskId, subItemId) => {
         set((state) => ({
           tasks: state.tasks.map((task) => {
-            if (task.id === taskId && task.subItems) {
-              const nextSubItems = task.subItems.map((sub) =>
-                sub.id === subItemId ? { ...sub, done: !sub.done } : sub
-              );
-              return {
-                ...task,
-                subItems: nextSubItems,
-                updatedAt: new Date().toISOString(),
-              };
+            if (task.id !== taskId || !task.subItems) return task;
+
+            const nextSubItems = task.subItems.map((sub) =>
+              sub.id === subItemId ? { ...sub, done: !sub.done } : sub
+            );
+
+            // Auto-complete: if every sub-item is now done, mark parent done.
+            // Auto-uncomplete: if a sub-item is un-checked on a done task, revert to scheduled.
+            const allDone =
+              nextSubItems.length > 0 && nextSubItems.every((s) => s.done);
+            const anyUndone = nextSubItems.some((s) => !s.done);
+            let nextStatus = task.status;
+            if (allDone) {
+              nextStatus = "done";
+            } else if (task.status === "done" && anyUndone) {
+              nextStatus = "scheduled";
             }
-            return task;
+
+            return {
+              ...task,
+              subItems: nextSubItems,
+              status: nextStatus,
+              updatedAt: new Date().toISOString(),
+            };
           }),
         }));
       },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, Play, CheckCircle2, Maximize2, Minimize2, StopCircle, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
@@ -33,11 +33,22 @@ export default function FocusPage() {
     startTimer,
     pauseTimer,
     stopSession,
+    resetTimer,
   } = usePomodoroStore();
 
   const { tasks, toggleTaskDone } = useTaskStore();
   const activeTask = tasks.find((t) => t.id === activeTaskId);
   const pendingTodayTasks = tasks.filter((t) => t.status !== "staged" && t.status !== "done");
+
+  // Prevent focus on a completed task: if the active task becomes done, stop session cleanly
+  useEffect(() => {
+    if (isSessionActive && activeTaskId) {
+      const current = tasks.find((t) => t.id === activeTaskId);
+      if (current && current.status === "done") {
+        stopSession();
+      }
+    }
+  }, [isSessionActive, activeTaskId, tasks, stopSession]);
 
   // Screen Visualizer Mode ("float" | "forest" | "standby")
   const [screenMode, setScreenMode] = useState<FocusScreenMode>("float");
@@ -221,8 +232,23 @@ export default function FocusPage() {
           </button>
         </div>
 
-        {/* Right: Early Finish & Fullscreen Toggle */}
+        {/* Right: Session controls + Fullscreen Toggle */}
         <div className="flex items-center gap-2">
+          {/* Reset timer back to full duration */}
+          {isSessionActive && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                resetTimer();
+              }}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-all border border-white/5 cursor-pointer backdrop-blur-md"
+              title="Reset timer to full duration"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          {/* Finish task (mark done + stop session) */}
           {isSessionActive && activeTaskId && (
             <button
               onClick={(e) => {
@@ -238,6 +264,23 @@ export default function FocusPage() {
             </button>
           )}
 
+          {/* Stop session without completing the task */}
+          {isSessionActive && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                stopSession();
+                router.push("/tasks");
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
+              title="Stop session and return to tasks"
+            >
+              <StopCircle className="h-3.5 w-3.5" />
+              <span>Stop</span>
+            </button>
+          )}
+
+          {/* Fullscreen toggle */}
           <button
             onClick={(e) => {
               e.stopPropagation();

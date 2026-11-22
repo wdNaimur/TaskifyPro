@@ -1,18 +1,33 @@
 "use client";
 
-import { Menu, Flame, Bell, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, Bell, User } from "lucide-react";
 
 interface HeaderProps {
   onOpenMobile: () => void;
 }
 
+const PAGE_SUBTITLES: Record<string, string> = {
+  "/tasks":    "Today's Focus",
+  "/manage":   "Planning Engine",
+  "/habits":   "Habit Tracker",
+  "/reports":  "Analytics",
+  "/settings": "Settings",
+  "/focus":    "Deep Focus Mode",
+};
+
 export function Header({ onOpenMobile }: HeaderProps) {
-  // Format current date nicely: "Tuesday, Nov 17"
+  const pathname = usePathname();
+
+  // Format current date nicely: "Saturday, Nov 22"
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "short",
     day: "numeric",
   }).format(new Date());
+
+  // Pick the subtitle for the current route; fall back to app name
+  const subtitle = PAGE_SUBTITLES[pathname] ?? "Taskify";
 
   return (
     <header className="h-16 shrink-0 rounded-2xl liquid-glass-light flex items-center justify-between px-4 lg:px-6 select-none transition-all">
@@ -31,20 +46,20 @@ export function Header({ onOpenMobile }: HeaderProps) {
             {today}
           </h2>
           <p className="text-xs font-medium text-slate-500 hidden sm:block">
-            Today&apos;s Focus
+            {subtitle}
           </p>
         </div>
       </div>
 
-      {/* ── Right side: Quick stats & User avatar ────────────────── */}
+      {/* ── Right side: Notifications & User avatar ────────────────── */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Notifications */}
+        {/* Notifications — badge only shown when there are real notifications */}
         <button
           className="p-2 text-slate-charcoal/70 hover:text-slate-charcoal hover:bg-black/5 rounded-xl transition-colors relative"
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-priority-p0-text ring-2 ring-white" />
+          {/* Badge removed — will be restored when real notifications are wired up */}
         </button>
 
         {/* User Avatar */}
@@ -58,4 +73,3 @@ export function Header({ onOpenMobile }: HeaderProps) {
     </header>
   );
 }
-

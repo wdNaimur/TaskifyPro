@@ -23,6 +23,7 @@ export default function ManagePage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState<string | undefined>(undefined);
 
   // Filter tasks into Today vs Backlog
   const todayTasks = tasks.filter((t) => t.status !== "staged");
@@ -30,11 +31,13 @@ export default function ManagePage() {
 
   const handleOpenCreateModal = () => {
     setTaskToEdit(null);
+    setSelectedScheduleDate(undefined);
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (task: Task) => {
     setTaskToEdit(task);
+    setSelectedScheduleDate(undefined);
     setIsModalOpen(true);
   };
 
@@ -119,7 +122,16 @@ export default function ManagePage() {
       )}
 
       {selectedTab === "weekly" && (
-        <WeeklyHorizonTab todayTasks={todayTasks} />
+        <WeeklyHorizonTab
+          tasks={tasks}
+          onAddTaskForDate={(dateStr) => {
+            setSelectedScheduleDate(dateStr);
+            setTaskToEdit(null);
+            setIsModalOpen(true);
+          }}
+          onEditTask={handleOpenEditModal}
+          onDeleteTask={deleteTask}
+        />
       )}
 
       {selectedTab === "backlog" && (
@@ -134,9 +146,14 @@ export default function ManagePage() {
       {/* ── Task Creation / Edit Modal ─────────────────────────────── */}
       <TaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedScheduleDate(undefined);
+        }}
         onSave={handleSaveTask}
         taskToEdit={taskToEdit}
+        defaultScheduleToday={selectedTab !== "backlog"}
+        initialScheduledDate={selectedScheduleDate}
       />
     </div>
   );

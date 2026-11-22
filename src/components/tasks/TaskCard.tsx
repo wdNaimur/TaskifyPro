@@ -55,6 +55,16 @@ export function TaskCard({
   const doneSubItemsCount = task.subItems?.filter((s) => s.done).length || 0;
   const totalSubItemsCount = task.subItems?.length || 0;
 
+  // Counter progress
+  const counterCurrent = task.currentCount || 0;
+  const counterTarget = task.targetCount || 1;
+  const counterPct = Math.min(100, (counterCurrent / counterTarget) * 100);
+
+  // Timed progress
+  const timedCompleted = task.completedMinutes || 0;
+  const timedTarget = task.durationMinutes || 1;
+  const timedPct = Math.min(100, (timedCompleted / timedTarget) * 100);
+
   return (
     <motion.div
       layout
@@ -93,7 +103,7 @@ export function TaskCard({
             )
           )}
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p
               className={cn(
                 "text-sm font-semibold text-slate-800 truncate leading-snug",
@@ -106,6 +116,41 @@ export function TaskCard({
               <ArchetypeBadge archetype={task.archetype} task={task} />
               <PriorityBadge priority={task.priority} />
             </div>
+
+            {/* ── Fix 4: Counter Progress Bar ─────────────────────────── */}
+            {isCounter && !isPlanMode && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-emerald-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${counterPct}%` }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 shrink-0 tabular-nums">
+                  {counterCurrent}/{counterTarget}
+                  {task.unit ? ` ${task.unit}` : ""}
+                </span>
+              </div>
+            )}
+
+            {/* ── Fix 5: Timed Progress Bar ───────────────────────────── */}
+            {isTimed && !isPlanMode && timedCompleted > 0 && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-blue-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${timedPct}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 shrink-0 tabular-nums">
+                  {timedCompleted}/{timedTarget}m
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

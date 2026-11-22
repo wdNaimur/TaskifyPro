@@ -26,6 +26,8 @@ interface TaskModalProps {
   onClose: () => void;
   onSave: (taskData: Omit<Task, "id" | "createdAt" | "updatedAt">) => void;
   taskToEdit?: Task | null;
+  defaultScheduleToday?: boolean;
+  initialScheduledDate?: string;
 }
 
 const ARCHETYPES: {
@@ -79,7 +81,14 @@ const PRIORITIES: { id: Priority; label: string; badgeClass: string; hint: strin
   },
 ];
 
-export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProps) {
+export function TaskModal({
+  isOpen,
+  onClose,
+  onSave,
+  taskToEdit,
+  defaultScheduleToday,
+  initialScheduledDate,
+}: TaskModalProps) {
   const { tasks } = useTaskStore();
   const todayTasksCount = tasks.filter((t) => t.status !== "staged").length;
   const isTodayFull = todayTasksCount >= DEFAULT_TASK_CONFIG.slotCapacity && !taskToEdit;
@@ -100,6 +109,7 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
   const [subItems, setSubItems] = useState<{ id: string; label: string; done: boolean }[]>([]);
   
   const [isScheduledToday, setIsScheduledToday] = useState(true);
+  const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
 
   // Click outside listener for dropdown
@@ -126,6 +136,7 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
         setTargetCount(taskToEdit.targetCount || DEFAULT_TASK_CONFIG.defaultTargetCount);
         setUnit(taskToEdit.unit || DEFAULT_TASK_CONFIG.defaultUnit);
         setSubItems(taskToEdit.subItems ? [...taskToEdit.subItems] : []);
+        setScheduledDate(taskToEdit.scheduledDate || new Date().toISOString().split("T")[0]);
         setIsScheduledToday(taskToEdit.status !== "staged");
       } else {
         // Defaults for new task: Checklist
@@ -136,7 +147,11 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
         setTargetCount(DEFAULT_TASK_CONFIG.defaultTargetCount);
         setUnit(DEFAULT_TASK_CONFIG.defaultUnit);
         setSubItems([]);
-        setIsScheduledToday(!isTodayFull);
+        const targetDate = initialScheduledDate || new Date().toISOString().split("T")[0];
+        setScheduledDate(targetDate);
+        const shouldSchedule =
+          defaultScheduleToday !== undefined ? defaultScheduleToday : !isTodayFull;
+        setIsScheduledToday(shouldSchedule);
       }
       setSubItemInput("");
       setIsTypeDropdownOpen(false);
@@ -144,7 +159,7 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
       // Auto-focus title on open
       setTimeout(() => titleInputRef.current?.focus(), 80);
     }
-  }, [taskToEdit, isOpen, isTodayFull]);
+  }, [taskToEdit, isOpen, isTodayFull, initialScheduledDate, defaultScheduleToday]);
 
   // Sub-items management (Checklist)
   const handleAddSubItem = () => {
@@ -197,7 +212,7 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
       unit: archetype === "counter" ? (unit.trim() || undefined) : undefined,
       durationMinutes: archetype === "timed" ? Number(durationMinutes) || 30 : undefined,
       completedMinutes: archetype === "timed" ? (taskToEdit?.completedMinutes || 0) : undefined,
-      scheduledDate: isScheduledToday ? new Date().toISOString().split("T")[0] : undefined,
+      scheduledDate: isScheduledToday ? scheduledDate : undefined,
     });
 
     toast.success(taskToEdit ? "Task updated" : "Task created");
@@ -600,12 +615,16 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
           </div>
         </div>
 
-        {/* Allocation: Today vs Backlog */}
-        <div className="p-3 bg-white/60 rounded-2xl border border-white/90 space-y-1.5">
+        {/* Allocation: Scheduled Date vs Backlog */}
+        <div className="p-3 bg-white/60 rounded-2xl border border-white/90 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-sage" />
-              Schedule for Today
+              <span>
+                {scheduledDate === new Date().toISOString().split("T")[0]
+                  ? "Schedule for Today"
+                  : "Schedule on Horizon"}
+              </span>
             </span>
             <input
               type="checkbox"
@@ -615,8 +634,22 @@ export function TaskModal({ isOpen, onClose, onSave, taskToEdit }: TaskModalProp
             />
           </div>
 
+          {isScheduledToday && (
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60">
+              <span className="text-[11px] font-semibold text-slate-600">
+                Scheduled Date:
+              </span>
+              <input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="bg-white/90 border border-slate-200/90 rounded-xl px-2.5 py-1 text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-sage shadow-2xs"
+              />
+            </div>
+          )}
+
           {/* Friendly capacity warning if scheduling for today exceeds 5 slots */}
-          {isScheduledToday && isTodayFull && (
+          {isScheduledToday && isTodayFull && scheduledDate === new Date().toISOString().split("T")[0] && (
             <div className="flex items-start gap-1.5 p-2 bg-amber-500/10 border border-amber-300/40 rounded-xl text-amber-800 text-[11px] leading-tight">
               <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
               <span>
