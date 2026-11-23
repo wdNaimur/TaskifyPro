@@ -48,7 +48,7 @@ Aligned with the master plan: `D:\02_Projects\[01]_Main\Taskify\ProjectPlan\TASK
 | 3.6 | Daily Alignment checklist widget | ✅ Done | Toggle check-off |
 | 3.7 | Tomorrow Glance widget | ✅ Done | Static preview card |
 | 3.8 | Drag-and-drop slot reordering (`@hello-pangea/dnd`) | ❌ Not started | Drag handle renders but DnD not wired |
-| 3.9 | Pomodoro web worker countdown (tab-suspend safe) | ❌ Not started | Currently uses `setInterval` |
+| 3.9 | Pomodoro web worker countdown (tab-suspend safe) | ✅ Done | Dedicated Web Worker + timestamp delta reconciliation + procedural Web Audio ambient soundscapes & chime |
 | 3.10 | Dexie.js IndexedDB persistence for tasks | ❌ Not started | Currently all in-memory state |
 
 **Acceptance Criteria:** Single-click task initiation starts Pomodoro timer; completing task triggers strike-through state and updates slot ratio.
@@ -103,7 +103,7 @@ Aligned with the master plan: `D:\02_Projects\[01]_Main\Taskify\ProjectPlan\TASK
 | Sprint | Total Tasks | ✅ Done | ❌ Remaining | % Complete |
 | :--- | :---: | :---: | :---: | :---: |
 | Sprint 1–2 (Shell & Auth) | 15 | 11 | 4 | 73% |
-| Sprint 3–4 (Tasks Cockpit) | 10 | 8 | 2 | 80% |
+| Sprint 3–4 (Tasks Cockpit) | 10 | 9 | 1 | 90% |
 | Sprint 5–6 (Manage) | 10 | 10 | 0 | 100% |
 | Sprint 7–8 (Habits/Reports/Settings) | 11 | 9 | 2 | 82% |
-| **Total** | **46** | **38** | **8** | **83%** |
+| **Total** | **46** | **39** | **7** | **85%** |

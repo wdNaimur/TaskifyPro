@@ -2,12 +2,26 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play, CheckCircle2, Maximize2, Minimize2, StopCircle, RotateCcw } from "lucide-react";
+import {
+  ArrowLeft,
+  Play,
+  CheckCircle2,
+  Maximize2,
+  Minimize2,
+  StopCircle,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  Check,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
+import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { toast } from "@/lib/stores/toastStore";
 import { usePomodoroTicker } from "@/lib/hooks/usePomodoroTicker";
+import { soundscapeAudio, SoundscapeType } from "@/lib/audio/soundscapeAudio";
+import { triggerConfetti } from "@/lib/utils/confetti";
 import { FocusSetupScreen, VisualizerMode } from "@/components/focus/FocusSetupScreen";
 import { FloatVisualizer } from "@/components/focus/screens/FloatVisualizer";
 import { ForestVisualizer } from "@/components/focus/screens/ForestVisualizer";
@@ -46,6 +60,24 @@ export default function FocusPage() {
   // Preferred visualizer mode ("float" | "forest")
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>("float");
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Ambient soundscape preferences & menu
+  const { settings, updateSettings } = useSettingsStore();
+  const [isSoundMenuOpen, setIsSoundMenuOpen] = useState(false);
+
+  const handleSelectSoundscape = (id: SoundscapeType) => {
+    updateSettings({ soundscape: id });
+    if (id === "none") {
+      soundscapeAudio.stop();
+    } else {
+      soundscapeAudio.play(id, settings.soundVolume ?? 0.5);
+    }
+  };
+
+  const handleVolumeChange = (vol: number) => {
+    updateSettings({ soundVolume: vol });
+    soundscapeAudio.setVolume(vol);
+  };
 
   // Priority ordering map for auto-selection
   const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
@@ -295,6 +327,94 @@ export default function FocusPage() {
 
         {/* Right: In-Session Controls + Fullscreen */}
         <div className="flex items-center gap-2">
+          {/* Ambient Soundscape Controller */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSoundMenuOpen((prev) => !prev);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer backdrop-blur-md",
+                isSoundMenuOpen
+                  ? "bg-white/20 text-white border-white/20"
+                  : !isSessionActive
+                  ? "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/80 shadow-2xs"
+                  : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border-white/5"
+              )}
+              title="Ambient Focus Soundscape"
+            >
+              {settings.soundscape === "none" ? (
+                <VolumeX className="h-3.5 w-3.5 opacity-60" />
+              ) : (
+                <Volume2 className={cn("h-3.5 w-3.5 text-emerald-400", isRunning && "animate-pulse")} />
+              )}
+              <span className="capitalize">{settings.soundscape === "none" ? "Muted" : settings.soundscape}</span>
+            </button>
+
+            {/* Soundscape Dropdown Menu */}
+            <AnimatePresence>
+              {isSoundMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 mt-2 w-52 p-3 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-white/10 shadow-2xl text-white z-50 space-y-3 cursor-default"
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/50">
+                    Ambient Soundscape
+                  </div>
+                  <div className="grid grid-cols-1 gap-1">
+                    {[
+                      { id: "none", label: "Muted (Silent)" },
+                      { id: "rain", label: "Rainfall" },
+                      { id: "forest", label: "Pine Forest" },
+                      { id: "cafe", label: "Cafe Murmur" },
+                      { id: "white-noise", label: "White Noise" },
+                    ].map((s) => {
+                      const isSelected = settings.soundscape === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => handleSelectSoundscape(s.id as SoundscapeType)}
+                          className={cn(
+                            "flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all text-left cursor-pointer",
+                            isSelected
+                              ? "bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30"
+                              : "hover:bg-white/10 text-white/70"
+                          )}
+                        >
+                          <span>{s.label}</span>
+                          {isSelected && <Check className="h-3 w-3 text-emerald-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Volume slider */}
+                  {settings.soundscape !== "none" && (
+                    <div className="pt-2 border-t border-white/10 space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-white/50 font-bold">
+                        <span>Volume</span>
+                        <span>{Math.round((settings.soundVolume ?? 0.5) * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round((settings.soundVolume ?? 0.5) * 100)}
+                        onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
+                        className="w-full accent-emerald-400 cursor-pointer"
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* Reset timer back to full duration */}
           {isSessionActive && (
             <button
@@ -314,6 +434,7 @@ export default function FocusPage() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                triggerConfetti(e.clientX, e.clientY);
                 toggleTaskDone(activeTaskId);
                 stopSession();
                 router.push("/tasks");

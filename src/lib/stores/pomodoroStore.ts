@@ -3,6 +3,9 @@ import { persist } from "zustand/middleware";
 import { DEFAULT_USER_SETTINGS } from "@/lib/constants";
 import { toast } from "./toastStore";
 import { useTaskStore } from "./taskStore";
+import { useSettingsStore } from "./settingsStore";
+import { soundscapeAudio } from "@/lib/audio/soundscapeAudio";
+import { triggerConfetti } from "@/lib/utils/confetti";
 
 export type PomodoroMode = "work" | "shortBreak" | "longBreak";
 
@@ -39,7 +42,7 @@ interface PomodoroState {
   startTimer: (taskId?: string, taskTitle?: string) => void;
   pauseTimer: () => void;
   resetTimer: () => void;
-  tick: () => void;
+  tick: (deltaSeconds?: number) => void;
   completeSession: () => void;
 }
 
@@ -94,6 +97,12 @@ export const usePomodoroStore = create<PomodoroState>()(
           elapsedWorkSeconds: 0,
         });
 
+        // Trigger ambient soundscape if configured
+        const currentSettings = useSettingsStore.getState().settings;
+        if (currentSettings.soundscape && currentSettings.soundscape !== "none") {
+          soundscapeAudio.play(currentSettings.soundscape, currentSettings.soundVolume ?? 0.5);
+        }
+
         toast.success(
           targetTaskTitle || task?.title
             ? `Focused on: ${targetTaskTitle || task?.title}`
@@ -107,6 +116,8 @@ export const usePomodoroStore = create<PomodoroState>()(
         if (mode === "work" && activeTaskId && elapsedWorkSeconds >= 30) {
           useTaskStore.getState().addTimeToTask(activeTaskId, 1);
         }
+
+        soundscapeAudio.stop();
 
         set({
           isSessionActive: false,
@@ -183,6 +194,11 @@ export const usePomodoroStore = create<PomodoroState>()(
           }
         }
 
+        const currentSettings = useSettingsStore.getState().settings;
+        if (currentSettings.soundscape && currentSettings.soundscape !== "none") {
+          soundscapeAudio.play(currentSettings.soundscape, currentSettings.soundVolume ?? 0.5);
+        }
+
         set({
           isRunning: true,
           activeTaskId: taskId !== undefined ? taskId : state.activeTaskId,
@@ -191,10 +207,12 @@ export const usePomodoroStore = create<PomodoroState>()(
       },
 
       pauseTimer: () => {
+        soundscapeAudio.stop();
         set({ isRunning: false });
       },
 
       resetTimer: () => {
+        soundscapeAudio.stop();
         const { mode, focusMinutes, breakMinutes } = get();
         const duration =
           mode === "work"
@@ -207,9 +225,11 @@ export const usePomodoroStore = create<PomodoroState>()(
         });
       },
 
-      tick: () => {
+      tick: (deltaSeconds: number = 1) => {
         const { timeLeft, isRunning, mode, activeTaskId, elapsedWorkSeconds, completeSession } = get();
         if (!isRunning) return;
+
+        const delta = Math.max(1, Math.min(timeLeft, deltaSeconds));
 
         // If actively focusing on a task, check if it became done
         if (mode === "work" && activeTaskId) {
@@ -220,19 +240,20 @@ export const usePomodoroStore = create<PomodoroState>()(
             return;
           }
 
-          const nextElapsed = (elapsedWorkSeconds || 0) + 1;
+          const nextElapsed = (elapsedWorkSeconds || 0) + delta;
           if (nextElapsed >= 60) {
-            useTaskStore.getState().addTimeToTask(activeTaskId, 1);
-            set({ elapsedWorkSeconds: 0 });
+            const minutesToAdd = Math.floor(nextElapsed / 60);
+            useTaskStore.getState().addTimeToTask(activeTaskId, minutesToAdd);
+            set({ elapsedWorkSeconds: nextElapsed % 60 });
           } else {
             set({ elapsedWorkSeconds: nextElapsed });
           }
         }
 
-        if (timeLeft <= 1) {
+        if (timeLeft <= delta) {
           completeSession();
         } else {
-          set({ timeLeft: timeLeft - 1 });
+          set({ timeLeft: timeLeft - delta });
         }
       },
 
@@ -254,6 +275,15 @@ export const usePomodoroStore = create<PomodoroState>()(
           useTaskStore.getState().addTimeToTask(activeTaskId, 1);
         }
 
+        // Stop continuous ambient soundscape
+        soundscapeAudio.stop();
+
+        // Serene completion chime
+        const currentSettings = useSettingsStore.getState().settings;
+        if (currentSettings.soundEffects) {
+          soundscapeAudio.playChime();
+        }
+
         if (mode === "work") {
           // If we have more parts left to do
           if (currentPart < totalParts) {
@@ -268,6 +298,7 @@ export const usePomodoroStore = create<PomodoroState>()(
             );
           } else {
             // All parts complete!
+            triggerConfetti(undefined, undefined, 70);
             set({
               isSessionActive: false,
               isRunning: false,

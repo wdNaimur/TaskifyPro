@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { Task, TaskStatus } from "@/types";
 import { INITIAL_SEED_TASKS, ENABLE_DEMO_SEED_DATA } from "@/lib/constants";
 import { useToastStore } from "./toastStore";
+import { triggerConfetti } from "@/lib/utils/confetti";
 
 interface TaskState {
   tasks: Task[];
@@ -76,6 +77,11 @@ export const useTaskStore = create<TaskState>()(
       },
 
       toggleTaskDone: (id) => {
+        const target = get().tasks.find((t) => t.id === id);
+        if (target && target.status !== "done") {
+          triggerConfetti();
+        }
+
         set((state) => ({
           tasks: state.tasks.map((task) => {
             if (task.id === id) {
@@ -108,6 +114,9 @@ export const useTaskStore = create<TaskState>()(
             let nextStatus = task.status;
             if (allDone) {
               nextStatus = "done";
+              if (task.status !== "done") {
+                triggerConfetti();
+              }
             } else if (task.status === "done" && anyUndone) {
               nextStatus = "scheduled";
             }
@@ -146,6 +155,10 @@ export const useTaskStore = create<TaskState>()(
               const nextCount = Math.min(target, current + 1);
               const isNowDone = nextCount >= target;
 
+              if (isNowDone && task.status !== "done") {
+                triggerConfetti();
+              }
+
               return {
                 ...task,
                 currentCount: nextCount,
@@ -166,6 +179,10 @@ export const useTaskStore = create<TaskState>()(
               const newCompleted = Math.max(0, prevCompleted + minutes);
               const target = task.durationMinutes || 0;
               const isNowDone = target > 0 && newCompleted >= target;
+
+              if (isNowDone && task.status !== "done") {
+                triggerConfetti();
+              }
 
               return {
                 ...task,

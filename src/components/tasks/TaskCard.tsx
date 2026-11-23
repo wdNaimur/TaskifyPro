@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Task } from "@/types";
 import { ArchetypeBadge } from "./ArchetypeBadge";
 import { PriorityBadge } from "./PriorityBadge";
+import { triggerConfetti } from "@/lib/utils/confetti";
 import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
@@ -89,7 +90,12 @@ export function TaskCard({
             /* Execution mode: Checkbox */
             onToggleDone && (
               <button
-                onClick={() => onToggleDone(task.id)}
+                onClick={(e) => {
+                  if (!isDone) {
+                    triggerConfetti(e.clientX, e.clientY);
+                  }
+                  onToggleDone(task.id);
+                }}
                 className={cn(
                   "h-5 w-5 rounded-lg border flex items-center justify-center transition-all focus:outline-hidden shrink-0 cursor-pointer",
                   isDone
@@ -173,7 +179,12 @@ export function TaskCard({
               {/* 1. Counter Task: ONLY [+] action */}
               {isCounter && onIncrementCounter && (
                 <button
-                  onClick={() => onIncrementCounter(task.id)}
+                  onClick={(e) => {
+                    if (counterCurrent + 1 >= counterTarget) {
+                      triggerConfetti(e.clientX, e.clientY);
+                    }
+                    onIncrementCounter(task.id);
+                  }}
                   className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-700/10 hover:bg-emerald-700 text-emerald-800 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-300/40 shadow-2xs active:scale-95 cursor-pointer"
                   title="Increment count (+1)"
                   aria-label="Increment count"
@@ -273,7 +284,15 @@ export function TaskCard({
                   {task.subItems.map((sub) => (
                     <div
                       key={sub.id}
-                      onClick={() => onToggleSubItem?.(task.id, sub.id)}
+                      onClick={(e) => {
+                        if (!sub.done) {
+                          const remainingUndone = task.subItems?.filter((s) => !s.done).length || 0;
+                          if (remainingUndone <= 1) {
+                            triggerConfetti(e.clientX, e.clientY);
+                          }
+                        }
+                        onToggleSubItem?.(task.id, sub.id);
+                      }}
                       className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-black/5 cursor-pointer transition-colors group/sub"
                     >
                       <div
@@ -318,7 +337,10 @@ export function TaskCard({
                   {onToggleDone && (
                     <button
                       type="button"
-                      onClick={() => onToggleDone(task.id)}
+                      onClick={(e) => {
+                        triggerConfetti(e.clientX, e.clientY);
+                        onToggleDone(task.id);
+                      }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ml-auto"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />

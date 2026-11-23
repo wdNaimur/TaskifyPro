@@ -10,6 +10,7 @@ export interface ExtendedSettings extends UserSettings {
   autoStartBreaks: boolean;
   autoStartPomodoros: boolean;
   soundEffects: boolean;
+  soundVolume: number;
 }
 
 interface SettingsState {
@@ -26,6 +27,7 @@ const INITIAL_SETTINGS: ExtendedSettings = {
   autoStartBreaks: false,
   autoStartPomodoros: false,
   soundEffects: true,
+  soundVolume: 0.5,
 };
 
 export const useSettingsStore = create<SettingsState>()(
