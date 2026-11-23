@@ -82,16 +82,16 @@ Aligned with the master plan: `D:\02_Projects\[01]_Main\Taskify\ProjectPlan\TASK
 
 | # | Task | Status | Notes |
 | :--- | :--- | :--- | :--- |
-| 7.1 | Habits matrix page (`/habits`) | ❌ Not started | §4.5 — weekly check-off grid, streaks |
-| 7.2 | Weekly Review & Reflection Ledger | ❌ Not started | §4.5 — wins, friction, next-week focus |
-| 7.3 | Habit creation modal — Binary Check-off | ❌ Not started | §4.5.1 |
-| 7.4 | Habit creation modal — Quantitative Counter | ❌ Not started | §4.5.1 |
-| 7.5 | Habit creation modal — Timed Duration | ❌ Not started | §4.5.1 |
-| 7.6 | Habit creation modal — Weekly Reflection Routine | ❌ Not started | §4.5.1 |
-| 7.7 | Reports page (`/reports`) — velocity, heatmap, slippage | ❌ Not started | §4.6 |
-| 7.8 | Settings page (`/settings`) — capacity, Pomodoro, soundscapes | ❌ Not started | §4.7 |
+| 7.1 | Habits matrix page (`/habits`) | ✅ Done | Weekly check-off grid, backward streak engine |
+| 7.2 | Weekly Review & Reflection Ledger | ✅ Done | Wins, friction, next-week focus ledger |
+| 7.3 | Habit creation modal — Binary Check-off | ✅ Done | `HabitModal.tsx` |
+| 7.4 | Habit creation modal — Quantitative Counter | ✅ Done | Target count + custom unit |
+| 7.5 | Habit creation modal — Timed Duration | ✅ Done | Minutes picker with preset chips |
+| 7.6 | Habit creation modal — Weekly Reflection Routine | ✅ Done | Reflection routine creation |
+| 7.7 | Reports page (`/reports`) — velocity, heatmap, slippage | ✅ Done | 7-day velocity chart, focus distribution |
+| 7.8 | Settings page (`/settings`) — capacity, Pomodoro, soundscapes | ✅ Done | Full preferences & ambient soundscapes |
 | 7.9 | IndexedDB (Dexie.js) full schema & sync layer | ❌ Not started | §5.3 |
-| 7.10 | JSON / CSV data export | ❌ Not started | §4.7 |
+| 7.10 | JSON / CSV data export | ✅ Done | Full JSON backup export & restore |
 | 7.11 | Offline sync upon network reconnection | ❌ Not started | §5.3 |
 
 **Acceptance Criteria:** Offline task modifications sync cleanly; PDF digest and JSON data export generate successfully.
@@ -103,7 +103,7 @@ Aligned with the master plan: `D:\02_Projects\[01]_Main\Taskify\ProjectPlan\TASK
 | Sprint | Total Tasks | ✅ Done | ❌ Remaining | % Complete |
 | :--- | :---: | :---: | :---: | :---: |
 | Sprint 1–2 (Shell & Auth) | 15 | 11 | 4 | 73% |
-| Sprint 3–4 (Tasks Cockpit) | 10 | 7 | 3 | 70% |
-| Sprint 5–6 (Manage) | 10 | 0 | 10 | 0% |
-| Sprint 7–8 (Habits/Reports/Settings) | 11 | 0 | 11 | 0% |
-| **Total** | **46** | **18** | **28** | **39%** |
+| Sprint 3–4 (Tasks Cockpit) | 10 | 8 | 2 | 80% |
+| Sprint 5–6 (Manage) | 10 | 10 | 0 | 100% |
+| Sprint 7–8 (Habits/Reports/Settings) | 11 | 9 | 2 | 82% |
+| **Total** | **46** | **38** | **8** | **83%** |
