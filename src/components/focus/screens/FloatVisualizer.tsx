@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface FloatVisualizerProps {
   timeLeft: number;
   isRunning: boolean;
+  isControlsVisible?: boolean;
 }
 
 // Individual animated rolling bubble digit with fixed block width & playful angle
@@ -63,6 +64,7 @@ function RollingBubbleDigit({
 export function FloatVisualizer({
   timeLeft,
   isRunning,
+  isControlsVisible = true,
 }: FloatVisualizerProps) {
   // Option to toggle between Hours:Minutes ("02:21") and Total Minutes ("141:00") when >= 60 min
   const [preferTotalMinutes, setPreferTotalMinutes] = useState(false);
@@ -151,8 +153,13 @@ export function FloatVisualizer({
         </div>
       </motion.div>
 
-      {/* ── Unit Indicators & Live Remaining Time Tag ─────────────────── */}
-      <div className="flex flex-col items-center gap-1.5 mt-2 sm:mt-4 z-20">
+      {/* ── Unit Indicators & Live Remaining Time Tag (Auto-hides with controls) ─ */}
+      <div
+        className={cn(
+          "flex flex-col items-center gap-1.5 mt-2 sm:mt-4 z-20 transition-opacity duration-500",
+          !isControlsVisible && isRunning ? "opacity-0 pointer-events-none" : "opacity-100"
+        )}
+      >
         <div className="flex items-center gap-6 sm:gap-12 text-[10px] sm:text-xs font-mono font-bold tracking-widest text-white/35 uppercase">
           <span>{isHoursMode ? "HRS" : "MIN"}</span>
           <span>{isHoursMode ? "MIN" : "SEC"}</span>

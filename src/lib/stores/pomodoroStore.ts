@@ -61,24 +61,31 @@ export const usePomodoroStore = create<PomodoroState>()(
       elapsedWorkSeconds: 0,
 
       startSession: (options = {}) => {
-        // Prevent starting focus for a task that is already completed
-        if (options.taskId) {
-          const task = useTaskStore.getState().tasks.find((t) => t.id === options.taskId);
-          if (task && task.status === "done") {
-            toast.warning("Cannot start focus: task is already completed!");
-            return;
-          }
+        const targetTaskId = options.taskId !== undefined ? options.taskId : get().activeTaskId;
+        const targetTaskTitle = options.taskTitle !== undefined ? options.taskTitle : get().activeTaskTitle;
+
+        // Enforce linking a task to start the Pomodoro
+        if (!targetTaskId) {
+          toast.warning("Please link a task to start the Pomodoro session!");
+          return;
         }
 
-        const focusMinutes = options.focusMinutes || DEFAULT_USER_SETTINGS.pomodoroDuration;
-        const breakMinutes = options.breakMinutes || DEFAULT_USER_SETTINGS.shortBreak;
+        // Prevent starting focus for a task that is already completed
+        const task = useTaskStore.getState().tasks.find((t) => t.id === targetTaskId);
+        if (task && task.status === "done") {
+          toast.warning("Cannot start focus: task is already completed!");
+          return;
+        }
+
+        const focusMinutes = options.focusMinutes || get().focusMinutes || DEFAULT_USER_SETTINGS.pomodoroDuration;
+        const breakMinutes = options.breakMinutes || get().breakMinutes || DEFAULT_USER_SETTINGS.shortBreak;
 
         set({
           isSessionActive: true,
           mode: "work",
           isRunning: true,
-          activeTaskId: options.taskId || null,
-          activeTaskTitle: options.taskTitle || null,
+          activeTaskId: targetTaskId,
+          activeTaskTitle: targetTaskTitle || task?.title || null,
           focusMinutes,
           breakMinutes,
           totalParts: 1,
@@ -88,8 +95,8 @@ export const usePomodoroStore = create<PomodoroState>()(
         });
 
         toast.success(
-          options.taskTitle
-            ? `Focused on: ${options.taskTitle}`
+          targetTaskTitle || task?.title
+            ? `Focused on: ${targetTaskTitle || task?.title}`
             : "Focus session started!"
         );
       },
@@ -164,6 +171,10 @@ export const usePomodoroStore = create<PomodoroState>()(
       startTimer: (taskId?: string, taskTitle?: string) => {
         const state = get();
         const targetTaskId = taskId !== undefined ? taskId : state.activeTaskId;
+        if (state.mode === "work" && !targetTaskId) {
+          toast.warning("Please link a task to start the Pomodoro session!");
+          return;
+        }
         if (targetTaskId) {
           const task = useTaskStore.getState().tasks.find((t) => t.id === targetTaskId);
           if (task && task.status === "done") {

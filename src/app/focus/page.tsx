@@ -6,10 +6,13 @@ import { ArrowLeft, Play, CheckCircle2, Maximize2, Minimize2, StopCircle, Rotate
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
+import { toast } from "@/lib/stores/toastStore";
 import { usePomodoroTicker } from "@/lib/hooks/usePomodoroTicker";
 import { FocusSetupScreen, VisualizerMode } from "@/components/focus/FocusSetupScreen";
 import { FloatVisualizer } from "@/components/focus/screens/FloatVisualizer";
 import { ForestVisualizer } from "@/components/focus/screens/ForestVisualizer";
+import { TaskModal } from "@/components/manage/TaskModal";
+import { Task } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function FocusPage() {
@@ -43,6 +46,65 @@ export default function FocusPage() {
   // Preferred visualizer mode ("float" | "forest")
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>("float");
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Priority ordering map for auto-selection
+  const PRIORITY_ORDER: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
+
+  // Task linking validation state & quick create modal
+  const [hasTaskError, setHasTaskError] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+
+  // Auto-select highest-priority pending task if none selected or if active task was completed
+  useEffect(() => {
+    const isCurrentActiveValid = activeTaskId && tasks.some((t) => t.id === activeTaskId && t.status !== "done");
+    if (!isCurrentActiveValid && tasks.length > 0) {
+      const pendingTasks = tasks.filter((t) => t.status !== "done");
+      if (pendingTasks.length > 0) {
+        const sorted = [...pendingTasks].sort(
+          (a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2)
+        );
+        const bestTask = sorted[0];
+        setActiveTask(bestTask.id, bestTask.title);
+        if (bestTask.durationMinutes && !isSessionActive) {
+          setFocusMinutes(bestTask.durationMinutes);
+        }
+      }
+    }
+  }, [activeTaskId, tasks, isSessionActive, setActiveTask, setFocusMinutes]);
+
+  // Quick task creation directly from Focus setup
+  const handleCreateTaskFromFocus = (taskData: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
+    const id = `task-${Date.now()}`;
+    const newTask: Task = {
+      ...taskData,
+      id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    useTaskStore.setState((state) => ({ tasks: [newTask, ...state.tasks] }));
+    setActiveTask(newTask.id, newTask.title);
+    if (newTask.durationMinutes) {
+      setFocusMinutes(newTask.durationMinutes);
+    }
+    setIsTaskModalOpen(false);
+    setHasTaskError(false);
+    toast.success(`Created & linked: ${newTask.title}`);
+  };
+
+  const handleStartFocus = () => {
+    if (!activeTaskId) {
+      setHasTaskError(true);
+      toast.warning("Please link a task before starting your Pomodoro session!");
+      return;
+    }
+    setHasTaskError(false);
+    startSession({
+      taskId: activeTaskId,
+      taskTitle: activeTaskTitle,
+      focusMinutes,
+      breakMinutes,
+    });
+  };
 
   // Restore user's preferred visualizer mode
   useEffect(() => {
@@ -318,23 +380,19 @@ export default function FocusPage() {
                 tasks={tasks}
                 activeTaskId={activeTaskId}
                 activeTaskTitle={activeTaskTitle}
+                hasTaskError={hasTaskError}
                 onSelectTask={(task) => {
                   setActiveTask(task ? task.id : null, task ? task.title : null);
+                  setHasTaskError(false);
                 }}
+                onAddNewTask={() => setIsTaskModalOpen(true)}
                 focusMinutes={focusMinutes}
                 onFocusMinutesChange={(mins) => setFocusMinutes(mins)}
                 breakMinutes={breakMinutes}
                 onBreakMinutesChange={(mins) => setBreakMinutes(mins)}
                 visualizerMode={visualizerMode}
                 onVisualizerModeChange={handleModeChange}
-                onStartFocus={() => {
-                  startSession({
-                    taskId: activeTaskId,
-                    taskTitle: activeTaskTitle,
-                    focusMinutes,
-                    breakMinutes,
-                  });
-                }}
+                onStartFocus={handleStartFocus}
                 onResetDefaults={() => {
                   setFocusMinutes(25);
                   setBreakMinutes(5);
@@ -351,8 +409,13 @@ export default function FocusPage() {
               transition={{ duration: 0.4 }}
               className="flex flex-col items-center justify-center w-full"
             >
-              {/* Task Title Banner */}
-              <div className="mb-4 sm:mb-8 text-center max-w-lg px-4">
+              {/* Task Title Banner (Auto-hides with controls) */}
+              <div
+                className={cn(
+                  "mb-4 sm:mb-8 text-center max-w-lg px-4 transition-opacity duration-500",
+                  !isControlsVisible && isRunning ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}
+              >
                 <p className="text-xs sm:text-sm font-semibold tracking-wide text-white/50 truncate">
                   {activeTask?.title || activeTaskTitle || "Deep Focus"}
                 </p>
@@ -360,7 +423,11 @@ export default function FocusPage() {
 
               {/* Chosen Visualizer */}
               {visualizerMode === "float" && (
-                <FloatVisualizer timeLeft={timeLeft} isRunning={isRunning} />
+                <FloatVisualizer
+                  timeLeft={timeLeft}
+                  isRunning={isRunning}
+                  isControlsVisible={isControlsVisible}
+                />
               )}
 
               {visualizerMode === "forest" && (
@@ -393,6 +460,13 @@ export default function FocusPage() {
       <footer className="relative z-10 h-6 flex items-center justify-center pointer-events-none">
         {/* Distraction-free clean footer */}
       </footer>
+      {/* ── Quick Create Task Modal ──────────────────────────────────── */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        onSave={handleCreateTaskFromFocus}
+        defaultScheduleToday
+      />
     </div>
   );
 }

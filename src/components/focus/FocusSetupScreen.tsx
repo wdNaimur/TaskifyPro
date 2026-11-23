@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Play, RotateCcw, Coffee, Sparkles } from "lucide-react";
+import { Play, RotateCcw, Coffee, Sparkles, AlertCircle } from "lucide-react";
 import { CurvedArcDial } from "@/components/focus/CurvedArcDial";
 import { FocusTaskDropdown } from "@/components/focus/FocusTaskDropdown";
 import { Task } from "@/types";
@@ -14,6 +14,8 @@ interface FocusSetupScreenProps {
   activeTaskId: string | null;
   activeTaskTitle: string | null;
   onSelectTask: (task: Task | null) => void;
+  onAddNewTask?: () => void;
+  hasTaskError?: boolean;
   focusMinutes: number;
   onFocusMinutesChange: (mins: number) => void;
   breakMinutes: number;
@@ -42,6 +44,8 @@ export function FocusSetupScreen({
   activeTaskId,
   activeTaskTitle,
   onSelectTask,
+  onAddNewTask,
+  hasTaskError = false,
   focusMinutes,
   onFocusMinutesChange,
   breakMinutes,
@@ -56,10 +60,14 @@ export function FocusSetupScreen({
     return `${String(focusMinutes).padStart(2, "0")} : 00`;
   }, [focusMinutes]);
 
+  const activeTask = useMemo(() => {
+    return tasks.find((t) => t.id === activeTaskId);
+  }, [tasks, activeTaskId]);
+
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-center text-center select-none py-6 px-4">
       {/* ── 1. Top: Task Choice Dropdown based on Priority ─────────── */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-6 sm:mb-8 flex flex-col items-center gap-2">
         <FocusTaskDropdown
           tasks={tasks}
           activeTaskId={activeTaskId}
@@ -70,7 +78,36 @@ export function FocusSetupScreen({
               onFocusMinutesChange(task.durationMinutes);
             }
           }}
+          onAddNewTask={onAddNewTask}
+          hasError={hasTaskError}
         />
+
+        {/* Linked Task Context Hint / Validation Alert */}
+        {activeTask ? (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200/60 text-[11px] text-slate-600 font-medium border border-slate-200/80">
+            <span>
+              {activeTask.archetype === "checklist"
+                ? "⚡ Checklist"
+                : activeTask.archetype === "counter"
+                ? "🔢 Countable"
+                : "⏱ Timed Block"}
+            </span>
+            <span>•</span>
+            <span className="font-mono">
+              {activeTask.completedMinutes || 0}m logged
+              {activeTask.durationMinutes ? ` / ${activeTask.durationMinutes}m est` : ""}
+            </span>
+          </div>
+        ) : hasTaskError ? (
+          <div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-semibold animate-pulse">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <span>Select or create a task above to link this session</span>
+          </div>
+        ) : (
+          <p className="text-[11px] text-slate-400 font-medium">
+            Link a task to accumulate focused time on it
+          </p>
+        )}
       </div>
 
       {/* ── 2. Giant Digital Clock Display ─────────────────────────── */}
@@ -180,22 +217,30 @@ export function FocusSetupScreen({
       </div>
 
       {/* ── 6. Primary Action: ▶ START FOCUS ───────────────────────── */}
-      <div className="flex items-center justify-center gap-3">
-        <button
-          onClick={onStartFocus}
-          className="flex items-center gap-2 px-9 py-3.5 rounded-full bg-[#1F2430] hover:bg-[#2C3446] text-white text-sm font-bold shadow-xl active:scale-95 transition-all cursor-pointer min-w-[170px] justify-center"
-        >
-          <Play className="h-4 w-4 fill-current ml-0.5" />
-          <span>START FOCUS</span>
-        </button>
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={onStartFocus}
+            className="flex items-center gap-2 px-9 py-3.5 rounded-full bg-[#1F2430] hover:bg-[#2C3446] text-white text-sm font-bold shadow-xl active:scale-95 transition-all cursor-pointer min-w-[170px] justify-center"
+          >
+            <Play className="h-4 w-4 fill-current ml-0.5" />
+            <span>START FOCUS</span>
+          </button>
 
-        <button
-          onClick={onResetDefaults}
-          className="h-12 w-12 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-md flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-          title="Reset timer to 25m focus / 5m break"
-        >
-          <RotateCcw className="h-4 w-4 text-slate-600" />
-        </button>
+          <button
+            onClick={onResetDefaults}
+            className="h-12 w-12 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-md flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+            title="Reset timer to 25m focus / 5m break"
+          >
+            <RotateCcw className="h-4 w-4 text-slate-600" />
+          </button>
+        </div>
+
+        {hasTaskError && !activeTaskId && (
+          <p className="text-xs text-red-500 font-semibold mt-1">
+            ⚠️ Please link a task above before starting
+          </p>
+        )}
       </div>
     </div>
   );
