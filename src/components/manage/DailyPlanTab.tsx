@@ -1,6 +1,7 @@
 "use client";
 
-import { Calendar } from "lucide-react";
+import { Calendar, GripVertical } from "lucide-react";
+import { Reorder } from "framer-motion";
 import { Task } from "@/types";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { DEFAULT_TASK_CONFIG } from "@/lib/constants";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 interface DailyPlanTabProps {
   tasks: Task[];
   slotCapacity?: number;
+  onReorder?: (tasks: Task[]) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onOpenCreateModal: () => void;
@@ -17,6 +19,7 @@ interface DailyPlanTabProps {
 export function DailyPlanTab({
   tasks,
   slotCapacity = DEFAULT_TASK_CONFIG.slotCapacity,
+  onReorder,
   onEdit,
   onDelete,
   onOpenCreateModal,
@@ -77,7 +80,7 @@ export function DailyPlanTab({
             Allocated Slots ({tasks.length} of {slotCapacity})
           </h4>
           <span className="text-[11px] text-slate-400">
-            Edit &amp; prioritize today&apos;s schedule
+            {tasks.length > 1 ? "Drag grip handle to reorder slots • " : ""}Edit &amp; prioritize today&apos;s schedule
           </span>
         </div>
 
@@ -89,6 +92,34 @@ export function DailyPlanTab({
               Click &quot;Add Task&quot; or promote from your Backlog
             </p>
           </div>
+        ) : onReorder ? (
+          <Reorder.Group
+            axis="y"
+            values={tasks}
+            onReorder={onReorder}
+            className="space-y-3"
+          >
+            {tasks.map((task) => (
+              <Reorder.Item
+                key={task.id}
+                value={task}
+                className="list-none select-none cursor-grab active:cursor-grabbing focus:outline-hidden"
+                whileDrag={{
+                  scale: 1.02,
+                  zIndex: 40,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                }}
+                transition={{ duration: 0.15 }}
+              >
+                <TaskCard
+                  task={task}
+                  mode="plan"
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
         ) : (
           tasks.map((task) => (
             <TaskCard

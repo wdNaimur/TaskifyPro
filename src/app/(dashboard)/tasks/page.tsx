@@ -212,6 +212,35 @@ export default function TasksPage() {
           </div>
         ) : (
           <>
+            {/* All Done for Today Celebration Card */}
+            {todayTasks.length > 0 && pendingTasks.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="liquid-glass-light rounded-3xl p-6 text-center border border-emerald-300/60 shadow-md bg-gradient-to-b from-emerald-50/50 to-white/70 space-y-2 select-none"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center mx-auto text-emerald-700 shadow-xs">
+                  <Sparkles className="h-6 w-6 text-emerald-600 animate-pulse" />
+                </div>
+                <h3 className="text-base font-bold text-slate-800">
+                  All Focus Slots Completed! 🎉
+                </h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Outstanding focus today. You conquered all {completedTasks.length} allocated tasks. Time to recharge or reflect.
+                </p>
+                <div className="pt-2 flex items-center justify-center gap-2">
+                  <Link
+                    href="/manage"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-forest hover:bg-forest-light text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Plan Horizon</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+
             {/* Pending Tasks */}
             {pendingTasks.length > 0 && (
               <div className="space-y-2.5">

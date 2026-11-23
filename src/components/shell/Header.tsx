@@ -1,10 +1,11 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Menu, Bell, User } from "lucide-react";
+import { Menu, Bell, User, Keyboard } from "lucide-react";
 
 interface HeaderProps {
   onOpenMobile: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 const PAGE_SUBTITLES: Record<string, string> = {
@@ -16,7 +17,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   "/focus":    "Deep Focus Mode",
 };
 
-export function Header({ onOpenMobile }: HeaderProps) {
+export function Header({ onOpenMobile, onOpenShortcuts }: HeaderProps) {
   const pathname = usePathname();
 
   // Format current date nicely: "Saturday, Nov 22"
@@ -53,6 +54,18 @@ export function Header({ onOpenMobile }: HeaderProps) {
 
       {/* ── Right side: Notifications & User avatar ────────────────── */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Keyboard Shortcuts Helper */}
+        {onOpenShortcuts && (
+          <button
+            onClick={onOpenShortcuts}
+            className="p-2 text-slate-charcoal/70 hover:text-slate-charcoal hover:bg-black/5 rounded-xl transition-colors relative cursor-pointer"
+            aria-label="Keyboard Shortcuts"
+            title="Keyboard Shortcuts (?)"
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
+        )}
+
         {/* Notifications — badge only shown when there are real notifications */}
         <button
           className="p-2 text-slate-charcoal/70 hover:text-slate-charcoal hover:bg-black/5 rounded-xl transition-colors relative"

@@ -18,6 +18,7 @@ export default function ManagePage() {
     addTask,
     updateTask,
     deleteTask,
+    reorderTasks,
     moveTaskToToday,
   } = useTaskStore();
 
@@ -115,6 +116,7 @@ export default function ManagePage() {
       {selectedTab === "daily" && (
         <DailyPlanTab
           tasks={todayTasks}
+          onReorder={reorderTasks}
           onEdit={handleOpenEditModal}
           onDelete={deleteTask}
           onOpenCreateModal={handleOpenCreateModal}

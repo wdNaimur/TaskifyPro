@@ -13,6 +13,7 @@ interface TaskState {
   addTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
+  reorderTasks: (reorderedTasks: Task[]) => void;
   toggleTaskDone: (id: string) => void;
   toggleSubItem: (taskId: string, subItemId: string) => void;
   moveTaskToToday: (id: string) => void;
@@ -61,6 +62,16 @@ export const useTaskStore = create<TaskState>()(
           onClick: () => {
             set((state) => ({ tasks: [target, ...state.tasks] }));
           },
+        });
+      },
+
+      reorderTasks: (reorderedTasks) => {
+        set((state) => {
+          const reorderedIds = new Set(reorderedTasks.map((t) => t.id));
+          const remainingTasks = state.tasks.filter((t) => !reorderedIds.has(t.id));
+          return {
+            tasks: [...reorderedTasks, ...remainingTasks],
+          };
         });
       },
 
