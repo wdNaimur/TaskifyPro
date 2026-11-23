@@ -7,12 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { usePomodoroTicker } from "@/lib/hooks/usePomodoroTicker";
+import { FocusSetupScreen, VisualizerMode } from "@/components/focus/FocusSetupScreen";
 import { FloatVisualizer } from "@/components/focus/screens/FloatVisualizer";
 import { ForestVisualizer } from "@/components/focus/screens/ForestVisualizer";
-import { StandByVisualizer } from "@/components/focus/screens/StandByVisualizer";
 import { cn } from "@/lib/utils";
-
-type FocusScreenMode = "float" | "forest" | "standby";
 
 export default function FocusPage() {
   const router = useRouter();
@@ -34,11 +32,38 @@ export default function FocusPage() {
     pauseTimer,
     stopSession,
     resetTimer,
+    setFocusMinutes,
+    setBreakMinutes,
+    setActiveTask,
   } = usePomodoroStore();
 
   const { tasks, toggleTaskDone } = useTaskStore();
   const activeTask = tasks.find((t) => t.id === activeTaskId);
-  const pendingTodayTasks = tasks.filter((t) => t.status !== "staged" && t.status !== "done");
+
+  // Preferred visualizer mode ("float" | "forest")
+  const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>("float");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Restore user's preferred visualizer mode
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("taskify_focus_screen_mode");
+      if (saved === "float" || saved === "forest") {
+        setVisualizerMode(saved as VisualizerMode);
+      }
+    } catch {
+      // LocalStorage access fallback
+    }
+  }, []);
+
+  const handleModeChange = (newMode: VisualizerMode) => {
+    setVisualizerMode(newMode);
+    try {
+      localStorage.setItem("taskify_focus_screen_mode", newMode);
+    } catch {
+      // Ignore
+    }
+  };
 
   // Prevent focus on a completed task: if the active task becomes done, stop session cleanly
   useEffect(() => {
@@ -49,31 +74,6 @@ export default function FocusPage() {
       }
     }
   }, [isSessionActive, activeTaskId, tasks, stopSession]);
-
-  // Screen Visualizer Mode ("float" | "forest" | "standby")
-  const [screenMode, setScreenMode] = useState<FocusScreenMode>("float");
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Restore user's preferred visualizer mode
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("taskify_focus_screen_mode");
-      if (saved === "float" || saved === "forest" || saved === "standby") {
-        setScreenMode(saved);
-      }
-    } catch {
-      // LocalStorage access fallback
-    }
-  }, []);
-
-  const handleModeChange = (newMode: FocusScreenMode) => {
-    setScreenMode(newMode);
-    try {
-      localStorage.setItem("taskify_focus_screen_mode", newMode);
-    } catch {
-      // Ignore
-    }
-  };
 
   // Fullscreen toggle handler
   const toggleFullscreen = useCallback(() => {
@@ -96,11 +96,11 @@ export default function FocusPage() {
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
-  // Inactivity auto-hide timer (2.5 seconds)
+  // Inactivity auto-hide timer (2.5 seconds) - hides header during active session
   const [isControlsVisible, setIsControlsVisible] = useState(true);
 
   useEffect(() => {
-    if (!isRunning) {
+    if (!isRunning || !isSessionActive) {
       setIsControlsVisible(true);
       return;
     }
@@ -127,9 +127,9 @@ export default function FocusPage() {
       window.removeEventListener("keydown", handleActivity);
       window.removeEventListener("touchstart", handleActivity);
     };
-  }, [isRunning]);
+  }, [isRunning, isSessionActive]);
 
-  // Spacebar to pause/resume
+  // Spacebar to pause/resume during active session
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && isSessionActive) {
@@ -145,7 +145,7 @@ export default function FocusPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isSessionActive, isRunning, pauseTimer, startTimer]);
 
-  // Break down timeLeft into hours, minutes, and seconds
+  // Break down timeLeft into hours, minutes, and seconds for visualizers
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);
   const seconds = timeLeft % 60;
@@ -160,16 +160,18 @@ export default function FocusPage() {
   return (
     <div
       onClick={() => {
+        // Clicking canvas during active immersion pauses / resumes timer
         if (isSessionActive) {
           isRunning ? pauseTimer() : startTimer();
         }
       }}
       className={cn(
-        "relative h-screen w-screen flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden transition-all duration-700 bg-black cursor-pointer",
+        "relative h-screen w-screen flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden transition-colors duration-700",
+        !isSessionActive ? "bg-[#F5F6F8] text-slate-800" : "bg-black text-white cursor-pointer",
         !isControlsVisible && isRunning && "cursor-none"
       )}
     >
-      {/* ── Top Bar: Discreet Navigation & Screen Switcher (Auto-hides) ─── */}
+      {/* ── Top Bar (Back button, Screen switcher, Fullscreen) ──────── */}
       <header
         onClick={(e) => e.stopPropagation()}
         className={cn(
@@ -179,60 +181,57 @@ export default function FocusPage() {
       >
         {/* Left: Back to Tasks */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push("/tasks");
-          }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-semibold transition-all border border-white/5 cursor-pointer backdrop-blur-md"
+          onClick={() => router.push("/tasks")}
+          className={cn(
+            "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer",
+            !isSessionActive
+              ? "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/80 shadow-2xs"
+              : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border-white/5 backdrop-blur-md"
+          )}
           title="Back to Tasks"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>Tasks</span>
         </button>
 
-        {/* Center: Clean Screen Mode Switcher (Float / Forest / StandBy) */}
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
-          <button
-            onClick={() => handleModeChange("float")}
-            className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-              screenMode === "float"
-                ? "bg-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.15)]"
-                : "text-white/40 hover:text-white/80 hover:bg-white/5"
-            )}
-          >
-            <span>🫧</span>
-            <span>Float</span>
-          </button>
+        {/* Center: When session active, display Task Title & Visualizer switcher */}
+        {isSessionActive ? (
+          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+            <button
+              onClick={() => handleModeChange("float")}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                visualizerMode === "float"
+                  ? "bg-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.15)]"
+                  : "text-white/40 hover:text-white/80 hover:bg-white/5"
+              )}
+            >
+              <span>🫧</span>
+              <span>Float</span>
+            </button>
 
-          <button
-            onClick={() => handleModeChange("forest")}
-            className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-              screenMode === "forest"
-                ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-                : "text-white/40 hover:text-white/80 hover:bg-white/5"
-            )}
-          >
-            <span>🌲</span>
-            <span>Forest</span>
-          </button>
+            <button
+              onClick={() => handleModeChange("forest")}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                visualizerMode === "forest"
+                  ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                  : "text-white/40 hover:text-white/80 hover:bg-white/5"
+              )}
+            >
+              <span>🌲</span>
+              <span>Forest</span>
+            </button>
+          </div>
+        ) : (
+          <div className="text-center">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+              Focus Setup &amp; Configuration
+            </span>
+          </div>
+        )}
 
-          <button
-            onClick={() => handleModeChange("standby")}
-            className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-              screenMode === "standby"
-                ? "bg-orange-500/25 text-orange-300 border border-orange-500/30 shadow-[0_0_12px_rgba(249,115,22,0.25)]"
-                : "text-white/40 hover:text-white/80 hover:bg-white/5"
-            )}
-          >
-            <span>⚡</span>
-            <span>StandBy</span>
-          </button>
-        </div>
-
-        {/* Right: Session controls + Fullscreen Toggle */}
+        {/* Right: In-Session Controls + Fullscreen */}
         <div className="flex items-center gap-2">
           {/* Reset timer back to full duration */}
           {isSessionActive && (
@@ -241,14 +240,14 @@ export default function FocusPage() {
                 e.stopPropagation();
                 resetTimer();
               }}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-all border border-white/5 cursor-pointer backdrop-blur-md"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/5 cursor-pointer backdrop-blur-md"
               title="Reset timer to full duration"
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>
           )}
 
-          {/* Finish task (mark done + stop session) */}
+          {/* Finish task */}
           {isSessionActive && activeTaskId && (
             <button
               onClick={(e) => {
@@ -264,16 +263,15 @@ export default function FocusPage() {
             </button>
           )}
 
-          {/* Stop session without completing the task */}
+          {/* Stop session & return to setup dialer */}
           {isSessionActive && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 stopSession();
-                router.push("/tasks");
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
-              title="Stop session and return to tasks"
+              title="Stop session and return to setup"
             >
               <StopCircle className="h-3.5 w-3.5" />
               <span>Stop</span>
@@ -286,7 +284,12 @@ export default function FocusPage() {
               e.stopPropagation();
               toggleFullscreen();
             }}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-xs font-semibold transition-all border border-white/5 cursor-pointer backdrop-blur-md"
+            className={cn(
+              "p-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer",
+              !isSessionActive
+                ? "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/80 shadow-2xs"
+                : "bg-white/5 hover:bg-white/10 text-white/50 hover:text-white border-white/5 backdrop-blur-md"
+            )}
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {isFullscreen ? (
@@ -298,111 +301,97 @@ export default function FocusPage() {
         </div>
       </header>
 
-      {/* ── Center: Visualizer Canvas ───────────────────────────────── */}
+      {/* ── Main Canvas ────────────────────────────────────────────── */}
       <main className="relative z-10 flex flex-col items-center justify-center my-auto w-full">
-        {!isSessionActive ? (
-          /* ── Idle State: 1-Click Launch ───────────────────────────── */
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="text-center max-w-sm px-4 space-y-4 cursor-default"
-          >
-            <h2 className="text-2xl font-bold text-white tracking-tight">
-              Ready to Focus
-            </h2>
-            <p className="text-xs text-white/50">
-              Select a task to enter full immersion mode.
-            </p>
-
-            {pendingTodayTasks.length > 0 ? (
-              <div className="space-y-2 text-left pt-2">
-                {pendingTodayTasks.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() =>
-                      startSession({
-                        taskId: t.id,
-                        taskTitle: t.title,
-                        focusMinutes: t.durationMinutes || 25,
-                      })
-                    }
-                    className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all cursor-pointer"
-                  >
-                    <span className="text-xs font-semibold truncate pr-2">
-                      {t.title}
-                    </span>
-                    <Play className="h-3.5 w-3.5 text-emerald-400 fill-emerald-400 shrink-0" />
-                  </button>
-                ))}
+        <AnimatePresence mode="wait">
+          {!isSessionActive ? (
+            /* ── STAGE 1: Setup Screen (Dialer, Priority Dropdown, Break Selector) ── */
+            <motion.div
+              key="setup-screen"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              transition={{ duration: 0.3 }}
+              className="w-full flex items-center justify-center"
+            >
+              <FocusSetupScreen
+                tasks={tasks}
+                activeTaskId={activeTaskId}
+                activeTaskTitle={activeTaskTitle}
+                onSelectTask={(task) => {
+                  setActiveTask(task ? task.id : null, task ? task.title : null);
+                }}
+                focusMinutes={focusMinutes}
+                onFocusMinutesChange={(mins) => setFocusMinutes(mins)}
+                breakMinutes={breakMinutes}
+                onBreakMinutesChange={(mins) => setBreakMinutes(mins)}
+                visualizerMode={visualizerMode}
+                onVisualizerModeChange={handleModeChange}
+                onStartFocus={() => {
+                  startSession({
+                    taskId: activeTaskId,
+                    taskTitle: activeTaskTitle,
+                    focusMinutes,
+                    breakMinutes,
+                  });
+                }}
+                onResetDefaults={() => {
+                  setFocusMinutes(25);
+                  setBreakMinutes(5);
+                }}
+              />
+            </motion.div>
+          ) : (
+            /* ── STAGE 2: Active Focus Immersion Screen (Float / Forest / Standby) ── */
+            <motion.div
+              key="immersion-screen"
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col items-center justify-center w-full"
+            >
+              {/* Task Title Banner */}
+              <div className="mb-4 sm:mb-8 text-center max-w-lg px-4">
+                <p className="text-xs sm:text-sm font-semibold tracking-wide text-white/50 truncate">
+                  {activeTask?.title || activeTaskTitle || "Deep Focus"}
+                </p>
               </div>
-            ) : null}
 
-            <div className="pt-2">
-              <button
-                onClick={() => startSession({ focusMinutes: 25 })}
-                className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all cursor-pointer"
-              >
-                Start 25m Focus
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* ── Active State: Chosen Visualizer ──────────────────────── */
-          <div className="flex flex-col items-center justify-center w-full">
-            {/* Minimalist Task Title (Whisper at top) */}
-            <div className="mb-4 sm:mb-8 text-center max-w-lg px-4">
-              <p className="text-xs sm:text-sm font-semibold tracking-wide text-white/50 truncate">
-                {activeTask?.title || activeTaskTitle || "Deep Focus"}
-              </p>
-            </div>
-
-            {/* Screen 1: Float Bubble Clock */}
-            {screenMode === "float" && (
-              <FloatVisualizer
-                timeLeft={timeLeft}
-                isRunning={isRunning}
-              />
-            )}
-
-            {/* Screen 2: Forest Living Tree */}
-            {screenMode === "forest" && (
-              <ForestVisualizer
-                formattedTime={formattedTime}
-                progressRatio={progressRatio}
-                mode={mode}
-              />
-            )}
-
-            {/* Screen 3: StandBy MagSafe Dual Digital Clock */}
-            {screenMode === "standby" && (
-              <StandByVisualizer
-                timeLeft={timeLeft}
-                progressRatio={progressRatio}
-                mode={mode}
-                isRunning={isRunning}
-                activeTaskTitle={activeTask?.title || activeTaskTitle}
-              />
-            )}
-
-            {/* Paused Indicator (Only visible when paused) */}
-            <AnimatePresence>
-              {!isRunning && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="mt-6 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white/70 text-xs font-semibold backdrop-blur-md"
-                >
-                  PAUSED • Tap anywhere to resume
-                </motion.div>
+              {/* Chosen Visualizer */}
+              {visualizerMode === "float" && (
+                <FloatVisualizer timeLeft={timeLeft} isRunning={isRunning} />
               )}
-            </AnimatePresence>
-          </div>
-        )}
+
+              {visualizerMode === "forest" && (
+                <ForestVisualizer
+                  formattedTime={formattedTime}
+                  progressRatio={progressRatio}
+                  mode={mode}
+                />
+              )}
+
+              {/* Paused Indicator Overlay */}
+              <AnimatePresence>
+                {!isRunning && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="mt-6 px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white/70 text-xs font-semibold backdrop-blur-md"
+                  >
+                    PAUSED • Tap anywhere or press Space to resume
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
-      {/* ── Footer: Empty / Pure Clean ──────────────────────────────── */}
+      {/* ── Footer ─────────────────────────────────────────────────── */}
       <footer className="relative z-10 h-6 flex items-center justify-center pointer-events-none">
-        {/* Completely clean and distraction-free */}
+        {/* Distraction-free clean footer */}
       </footer>
     </div>
   );

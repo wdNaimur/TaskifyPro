@@ -31,6 +31,9 @@ interface PomodoroState {
   // Actions
   startSession: (options?: StartSessionOptions) => void;
   stopSession: () => void;
+  setFocusMinutes: (minutes: number) => void;
+  setBreakMinutes: (minutes: number) => void;
+  setActiveTask: (taskId: string | null, taskTitle: string | null) => void;
   adjustTime: (deltaMinutes: number) => void;
   setMode: (mode: PomodoroMode) => void;
   startTimer: (taskId?: string, taskTitle?: string) => void;
@@ -109,6 +112,28 @@ export const usePomodoroStore = create<PomodoroState>()(
           elapsedWorkSeconds: 0,
         });
         toast.info("Focus session ended");
+      },
+
+      setFocusMinutes: (minutes: number) => {
+        const safeMinutes = Math.max(1, Math.min(180, minutes));
+        const { isRunning, isSessionActive } = get();
+        set({
+          focusMinutes: safeMinutes,
+          // If not actively running a session, sync timeLeft to new duration
+          timeLeft: !isRunning ? safeMinutes * 60 : get().timeLeft,
+        });
+      },
+
+      setBreakMinutes: (minutes: number) => {
+        const safeMinutes = Math.max(1, Math.min(60, minutes));
+        set({ breakMinutes: safeMinutes });
+      },
+
+      setActiveTask: (taskId: string | null, taskTitle: string | null) => {
+        set({
+          activeTaskId: taskId,
+          activeTaskTitle: taskTitle,
+        });
       },
 
       adjustTime: (deltaMinutes: number) => {
