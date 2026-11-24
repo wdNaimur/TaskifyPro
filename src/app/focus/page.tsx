@@ -13,6 +13,7 @@ import {
   Volume2,
   VolumeX,
   Check,
+  Sun,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
@@ -20,6 +21,7 @@ import { useTaskStore } from "@/lib/stores/taskStore";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { toast } from "@/lib/stores/toastStore";
 import { usePomodoroTicker } from "@/lib/hooks/usePomodoroTicker";
+import { useWakeLock } from "@/lib/hooks/useWakeLock";
 import { soundscapeAudio, SoundscapeType } from "@/lib/audio/soundscapeAudio";
 import { triggerConfetti } from "@/lib/utils/confetti";
 import { FocusSetupScreen, VisualizerMode } from "@/components/focus/FocusSetupScreen";
@@ -64,6 +66,11 @@ export default function FocusPage() {
   // Ambient soundscape preferences & menu
   const { settings, updateSettings } = useSettingsStore();
   const [isSoundMenuOpen, setIsSoundMenuOpen] = useState(false);
+
+  // Screen Wake Lock: keeps display awake on mobile during immersion
+  const { isActive: isWakeLockActive, request: requestWakeLock, release: releaseWakeLock } = useWakeLock(
+    (isSessionActive || isRunning) && settings.keepScreenAwake !== false
+  );
 
   const handleSelectSoundscape = (id: SoundscapeType) => {
     updateSettings({ soundscape: id });
@@ -460,6 +467,46 @@ export default function FocusPage() {
               <span>Stop</span>
             </button>
           )}
+
+          {/* Keep Screen Awake on Mobile Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const next = !(settings.keepScreenAwake !== false);
+              updateSettings({ keepScreenAwake: next });
+              if (next) {
+                requestWakeLock();
+                toast.success("Display will stay awake during focus");
+              } else {
+                releaseWakeLock();
+                toast.info("Display sleep allowed");
+              }
+            }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer backdrop-blur-md",
+              settings.keepScreenAwake !== false
+                ? isWakeLockActive
+                  ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                  : !isSessionActive
+                  ? "bg-white/80 hover:bg-white text-slate-700 border-slate-200/80 shadow-2xs"
+                  : "bg-white/10 text-white/80 border-white/10"
+                : !isSessionActive
+                ? "bg-white/40 text-slate-400 border-slate-200/50 hover:text-slate-600"
+                : "bg-white/5 text-white/40 border-white/5 hover:text-white/70"
+            )}
+            title={
+              settings.keepScreenAwake !== false
+                ? isWakeLockActive
+                  ? "Screen Awake is active (screen will not dim or lock on mobile)"
+                  : "Screen Awake is enabled"
+                : "Screen sleep allowed (click to keep awake)"
+            }
+          >
+            <Sun className={cn("h-3.5 w-3.5", isWakeLockActive ? "text-amber-400 animate-pulse" : "opacity-60")} />
+            <span className="hidden sm:inline">
+              {settings.keepScreenAwake !== false ? (isWakeLockActive ? "Awake" : "Awake") : "Sleep OK"}
+            </span>
+          </button>
 
           {/* Fullscreen toggle */}
           <button
