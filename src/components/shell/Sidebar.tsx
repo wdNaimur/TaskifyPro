@@ -13,7 +13,6 @@ import {
   X,
   Flame,
   CheckCheck,
-  Timer,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,11 +31,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    label: "Focus",
-    href: "/focus",
-    icon: Timer,
-  },
   {
     label: "Tasks",
     href: "/tasks",
