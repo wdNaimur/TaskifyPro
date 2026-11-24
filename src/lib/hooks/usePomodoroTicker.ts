@@ -15,7 +15,7 @@ export function usePomodoroTicker() {
   const tick = usePomodoroStore((s) => s.tick);
 
   const workerRef = useRef<Worker | null>(null);
-  const lastTickTimeRef = useRef<number>(Date.now());
+  const lastTickTimeRef = useRef<number>(0);
   const fallbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize or terminate the Web Worker

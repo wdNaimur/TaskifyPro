@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useHabitStore } from "@/lib/stores/habitStore";
 import { HabitMatrix } from "@/components/habits/HabitMatrix";
 import { WeeklyReflectionLedger } from "@/components/habits/WeeklyReflectionLedger";
@@ -44,10 +44,13 @@ export default function HabitsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
 
-  const currentWeekKey = useMemo(() => getCurrentWeekKey(), []);
+  const [currentWeekKey, setCurrentWeekKey] = useState<string>("");
+  const [todayStr, setTodayStr] = useState<string>("");
 
-  // Compute key stats for header overview
-  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  useEffect(() => {
+    setCurrentWeekKey(getCurrentWeekKey());
+    setTodayStr(new Date().toISOString().split("T")[0]);
+  }, []);
 
   const todayCompletedCount = useMemo(() => {
     return habits.filter((h) => !!logs[`${h.id}_${todayStr}`]?.done).length;

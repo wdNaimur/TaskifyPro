@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Bell, User, Keyboard } from "lucide-react";
 
@@ -19,13 +20,17 @@ const PAGE_SUBTITLES: Record<string, string> = {
 
 export function Header({ onOpenMobile, onOpenShortcuts }: HeaderProps) {
   const pathname = usePathname();
+  const [today, setToday] = useState<string>("");
 
-  // Format current date nicely: "Saturday, Nov 22"
-  const today = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  }).format(new Date());
+  useEffect(() => {
+    setToday(
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      }).format(new Date())
+    );
+  }, []);
 
   // Pick the subtitle for the current route; fall back to app name
   const subtitle = PAGE_SUBTITLES[pathname] ?? "Taskify";
@@ -43,8 +48,8 @@ export function Header({ onOpenMobile, onOpenShortcuts }: HeaderProps) {
         </button>
 
         <div>
-          <h2 className="text-base font-bold text-slate-800 leading-tight tracking-tight">
-            {today}
+          <h2 className="text-base font-bold text-slate-800 leading-tight tracking-tight min-h-[1.25rem]">
+            {today || "Today"}
           </h2>
           <p className="text-xs font-medium text-slate-500 hidden sm:block">
             {subtitle}

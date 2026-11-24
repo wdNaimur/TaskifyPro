@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Habit, HabitLogEntry } from "@/types";
 import {
   Flame,
@@ -35,6 +35,14 @@ const ALL_WEEK_DAYS = [
   "Sunday",
 ];
 
+const STATIC_HABIT_DAYS = ALL_WEEK_DAYS.map((dayName, idx) => ({
+  dayName,
+  shortName: dayName.slice(0, 3),
+  dayNumber: idx + 1,
+  dateStr: `day-${idx + 1}`,
+  isToday: false,
+}));
+
 export function HabitMatrix({
   habits,
   logs,
@@ -43,8 +51,10 @@ export function HabitMatrix({
   onEditHabit,
   onDeleteHabit,
 }: HabitMatrixProps) {
-  // Compute the 7 days of the current week (Monday to Sunday)
-  const weekDays = useMemo(() => {
+  // Compute the 7 days of the current week (Monday to Sunday) on client mount to avoid unstable prerender
+  const [weekDays, setWeekDays] = useState(STATIC_HABIT_DAYS);
+
+  useEffect(() => {
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
 
@@ -55,7 +65,7 @@ export function HabitMatrix({
     monday.setDate(now.getDate() + diffToMonday);
     monday.setHours(0, 0, 0, 0);
 
-    return ALL_WEEK_DAYS.map((dayName, idx) => {
+    const days = ALL_WEEK_DAYS.map((dayName, idx) => {
       const dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + idx);
       const dateStr = dayDate.toISOString().split("T")[0];
@@ -69,6 +79,7 @@ export function HabitMatrix({
         isToday,
       };
     });
+    setWeekDays(days);
   }, []);
 
   const getArchetypeIcon = (type: Habit["type"]) => {

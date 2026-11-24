@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { useHabitStore } from "@/lib/stores/habitStore";
 import {
@@ -29,6 +29,17 @@ const ALL_WEEK_DAYS = [
   "Saturday",
   "Sunday",
 ];
+
+const STATIC_WEEK_VELOCITY = ALL_WEEK_DAYS.map((dayName, idx) => ({
+  dayName,
+  shortName: dayName.slice(0, 3),
+  dayNumber: idx + 1,
+  dateStr: `day-${idx + 1}`,
+  isToday: false,
+  tasksDone: 0,
+  habitsDone: 0,
+  score: 0,
+}));
 
 export default function ReportsPage() {
   const { tasks } = useTaskStore();
@@ -71,8 +82,10 @@ export default function ReportsPage() {
     return counts;
   }, [completedTasks]);
 
-  // 7-day velocity chart data (Monday to Sunday)
-  const weekVelocity = useMemo(() => {
+  // 7-day velocity chart data (Monday to Sunday) - computed client-side to avoid unstable prerender
+  const [weekVelocity, setWeekVelocity] = useState(STATIC_WEEK_VELOCITY);
+
+  useEffect(() => {
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
     const jsDay = now.getDay();
@@ -82,7 +95,7 @@ export default function ReportsPage() {
     monday.setDate(now.getDate() + diffToMonday);
     monday.setHours(0, 0, 0, 0);
 
-    return ALL_WEEK_DAYS.map((dayName, idx) => {
+    const computed = ALL_WEEK_DAYS.map((dayName, idx) => {
       const dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + idx);
       const dateStr = dayDate.toISOString().split("T")[0];
@@ -110,6 +123,7 @@ export default function ReportsPage() {
         score: dayCompleted * 20 + habitDoneCount * 15,
       };
     });
+    setWeekVelocity(computed);
   }, [completedTasks, habits, logs]);
 
   const maxVelocityScore = useMemo(() => {

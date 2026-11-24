@@ -109,8 +109,18 @@ export function TaskModal({
   const [subItems, setSubItems] = useState<{ id: string; label: string; done: boolean }[]>([]);
   
   const [isScheduledToday, setIsScheduledToday] = useState(true);
-  const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [todayStr, setTodayStr] = useState<string>("");
+  const [scheduledDate, setScheduledDate] = useState<string>(initialScheduledDate || "");
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+
+  // Initialize today's date on client mount to avoid unstable prerender
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setTodayStr(today);
+    if (!scheduledDate) {
+      setScheduledDate(initialScheduledDate || today);
+    }
+  }, [initialScheduledDate]);
 
   // Click outside listener for dropdown
   useEffect(() => {
@@ -621,7 +631,7 @@ export function TaskModal({
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-sage" />
               <span>
-                {scheduledDate === new Date().toISOString().split("T")[0]
+                {todayStr && scheduledDate === todayStr
                   ? "Schedule for Today"
                   : "Schedule on Horizon"}
               </span>
@@ -649,7 +659,7 @@ export function TaskModal({
           )}
 
           {/* Friendly capacity warning if scheduling for today exceeds 5 slots */}
-          {isScheduledToday && isTodayFull && scheduledDate === new Date().toISOString().split("T")[0] && (
+          {isScheduledToday && isTodayFull && todayStr && scheduledDate === todayStr && (
             <div className="flex items-start gap-1.5 p-2 bg-amber-500/10 border border-amber-300/40 rounded-xl text-amber-800 text-[11px] leading-tight">
               <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
               <span>

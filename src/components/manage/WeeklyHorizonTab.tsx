@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Plus, Lock, Calendar, Pencil, Trash2 } from "lucide-react";
 import { Task } from "@/types";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
@@ -60,14 +61,28 @@ function getWeekDaysData() {
   });
 }
 
+const STATIC_WEEK_DAYS = ALL_WEEK_DAYS.map((dayName, idx) => ({
+  dayName,
+  dateStr: `day-${idx + 1}`,
+  dayNum: idx + 1,
+  monthName: "",
+  isToday: false,
+  isWeekend: dayName === "Saturday" || dayName === "Sunday",
+}));
+
 export function WeeklyHorizonTab({
   tasks,
   onAddTaskForDate,
   onEditTask,
   onDeleteTask,
 }: WeeklyHorizonTabProps) {
-  const weekDays = getWeekDaysData();
-  const todayStr = new Date().toISOString().split("T")[0];
+  const [weekDays, setWeekDays] = useState(STATIC_WEEK_DAYS);
+  const [todayStr, setTodayStr] = useState<string>("");
+
+  useEffect(() => {
+    setWeekDays(getWeekDaysData());
+    setTodayStr(new Date().toISOString().split("T")[0]);
+  }, []);
 
   // Total tasks scheduled in the 7-day window
   const weekDatesSet = new Set(weekDays.map((d) => d.dateStr));
