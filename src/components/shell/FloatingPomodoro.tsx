@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Play, Pause, Timer, Coffee, Maximize2, Sparkles } from "lucide-react";
@@ -12,6 +13,12 @@ import { cn } from "@/lib/utils";
 export function FloatingPomodoro() {
   const router = useRouter();
   const { tasks } = useTaskStore();
+  const [todayStr, setTodayStr] = useState<string>("");
+
+  useEffect(() => {
+    setTodayStr(new Date().toISOString().split("T")[0]);
+  }, []);
+
   const {
     isSessionActive,
     mode,
@@ -32,7 +39,11 @@ export function FloatingPomodoro() {
   // If there are no timed tasks scheduled for today and no active timed session, do not show widget
   const activeTask = tasks.find((t) => t.id === activeTaskId);
   const hasTimerTaskToday = tasks.some(
-    (t) => t.status !== "staged" && t.status !== "done" && t.archetype === "timed"
+    (t) =>
+      t.status !== "staged" &&
+      t.status !== "done" &&
+      t.archetype === "timed" &&
+      (todayStr && t.scheduledDate ? t.scheduledDate === todayStr : true)
   );
   const isTimedSession = isSessionActive && (activeTask ? activeTask.archetype === "timed" : true);
 

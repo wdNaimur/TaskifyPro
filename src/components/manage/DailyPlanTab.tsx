@@ -5,6 +5,7 @@ import { Reorder } from "framer-motion";
 import { Task } from "@/types";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { DEFAULT_TASK_CONFIG } from "@/lib/constants";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { cn } from "@/lib/utils";
 
 interface DailyPlanTabProps {
@@ -24,6 +25,7 @@ export function DailyPlanTab({
   onDelete,
   onOpenCreateModal,
 }: DailyPlanTabProps) {
+  const isHydrated = useHydrated();
   const isFull = tasks.length >= slotCapacity;
 
   return (
@@ -84,7 +86,13 @@ export function DailyPlanTab({
           </span>
         </div>
 
-        {tasks.length === 0 ? (
+        {!isHydrated ? (
+          /* Hydration Skeleton */
+          <div className="space-y-3 pt-1 animate-pulse" aria-label="Loading daily schedule">
+            <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
+            <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
+          </div>
+        ) : tasks.length === 0 ? (
           <div className="liquid-glass-light rounded-3xl p-10 text-center border border-white/80">
             <Calendar className="h-8 w-8 text-slate-300 mx-auto mb-2" />
             <p className="text-sm font-semibold text-slate-700">No tasks allocated for today</p>

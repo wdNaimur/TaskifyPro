@@ -2,82 +2,89 @@ import { Task } from "@/types";
 
 /**
  * ─────────────────────────────────────────────────────────────────
- * Demo / Seed Data
- * When you connect Dexie.js (IndexedDB) or a backend,
- * you can empty this array or toggle SEED_DEMO_DATA to false.
+ * Demo / Seed Data & Development Test Suite
  * ─────────────────────────────────────────────────────────────────
  */
 
-export const ENABLE_DEMO_SEED_DATA = true;
+export const ENABLE_DEMO_SEED_DATA = false;
 
-const todayStr = new Date().toISOString().split("T")[0];
+/**
+ * Generates fresh test tasks with dynamic current dates.
+ * Covers all archetypes: counter, checklist, timed, and staged backlog tasks.
+ */
+export function createDevTestTasks(): Task[] {
+  const todayStr = typeof window !== "undefined"
+    ? new Date().toISOString().split("T")[0]
+    : "2026-11-24";
 
-export const INITIAL_SEED_TASKS: Task[] = [
-  {
-    id: "task-1",
-    title: "Drink 5 glasses of water",
-    archetype: "counter",
-    priority: "P1",
-    status: "scheduled",
-    targetCount: 5,
-    currentCount: 2,
-    unit: "glasses",
-    scheduledDate: todayStr,
-    slotIndex: 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-2",
-    title: "PR review and deployment checklist",
-    archetype: "checklist",
-    priority: "P0",
-    status: "scheduled",
-    subItems: [
-      { id: "sub-1", label: "Check unit tests", done: true },
-      { id: "sub-2", label: "Verify Vercel preview build", done: false },
-      { id: "sub-3", label: "Merge to main", done: false },
-    ],
-    scheduledDate: todayStr,
-    slotIndex: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-3",
-    title: "Deep work: Next.js architecture review",
-    archetype: "timed",
-    priority: "P1",
-    status: "scheduled",
-    durationMinutes: 45,
-    completedMinutes: 0,
-    scheduledDate: todayStr,
-    slotIndex: 2,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-4",
-    title: "Read 10 pages of software design patterns",
-    archetype: "counter",
-    priority: "P2",
-    status: "scheduled",
-    targetCount: 10,
-    currentCount: 0,
-    unit: "pages",
-    scheduledDate: todayStr,
-    slotIndex: 3,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-5",
-    title: "Weekly planning and triage session",
-    archetype: "timed",
-    priority: "P1",
-    status: "staged",
-    durationMinutes: 60,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+  return [
+    {
+      id: `task-dev-counter-${Date.now()}`,
+      title: "Drink 5 glasses of water",
+      archetype: "counter",
+      priority: "P1",
+      status: "scheduled",
+      targetCount: 5,
+      currentCount: 2,
+      unit: "glasses",
+      scheduledDate: todayStr,
+      slotIndex: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: `task-dev-checklist-${Date.now()}`,
+      title: "PR review and deployment checklist",
+      archetype: "checklist",
+      priority: "P0",
+      status: "scheduled",
+      subItems: [
+        { id: "sub-1", label: "Check unit tests and linting", done: true },
+        { id: "sub-2", label: "Verify Vercel production build", done: false },
+        { id: "sub-3", label: "Inspect confetti celebration", done: false },
+      ],
+      scheduledDate: todayStr,
+      slotIndex: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: `task-dev-timed-${Date.now()}`,
+      title: "Deep work: System architecture review",
+      archetype: "timed",
+      priority: "P1",
+      status: "scheduled",
+      durationMinutes: 25,
+      completedMinutes: 10,
+      scheduledDate: todayStr,
+      slotIndex: 2,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: `task-dev-backlog-p0-${Date.now()}`,
+      title: "Critical: Database connection pool optimization",
+      archetype: "checklist",
+      priority: "P0",
+      status: "staged",
+      subItems: [
+        { id: "sub-b1", label: "Audit slow queries", done: false },
+        { id: "sub-b2", label: "Add composite index", done: false },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: `task-dev-backlog-p2-${Date.now()}`,
+      title: "Routine: Update dependencies and documentation",
+      archetype: "timed",
+      priority: "P2",
+      status: "staged",
+      durationMinutes: 30,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+}
+
+export const INITIAL_SEED_TASKS: Task[] = [];

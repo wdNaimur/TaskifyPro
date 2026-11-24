@@ -1,10 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Lock, Calendar, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Lock,
+  Calendar,
+  Pencil,
+  Trash2,
+  CalendarDays,
+  Columns4,
+  Columns3,
+  Square,
+  GripVertical,
+  ArrowDown,
+  type LucideIcon,
+} from "lucide-react";
 import { Task } from "@/types";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
 import { ArchetypeBadge } from "@/components/tasks/ArchetypeBadge";
+import { useTaskStore } from "@/lib/stores/taskStore";
+import { useSettingsStore } from "@/lib/stores/settingsStore";
+import { useToastStore } from "@/lib/stores/toastStore";
+import { computeWeekDays } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
 
 interface WeeklyHorizonTabProps {
@@ -12,6 +29,7 @@ interface WeeklyHorizonTabProps {
   onAddTaskForDate: (dateStr: string) => void;
   onEditTask?: (task: Task) => void;
   onDeleteTask?: (id: string) => void;
+  onMoveTaskDate?: (taskId: string, targetDateStr: string) => void;
 }
 
 const ALL_WEEK_DAYS = [
@@ -24,43 +42,6 @@ const ALL_WEEK_DAYS = [
   "Sunday",
 ];
 
-// Helper to compute dates for the full 7-day week (Monday to Sunday)
-function getWeekDaysData() {
-  const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
-
-  // day: 0=Sun, 1=Mon, ..., 6=Sat
-  const jsDay = now.getDay();
-  // Monday-first offset:
-  // If Sunday (0), distance to Monday is -6 days
-  // Otherwise distance to Monday is 1 - jsDay
-  const diffToMonday = jsDay === 0 ? -6 : 1 - jsDay;
-
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  return ALL_WEEK_DAYS.map((dayName, idx) => {
-    const dayDate = new Date(monday);
-    dayDate.setDate(monday.getDate() + idx);
-
-    const dateStr = dayDate.toISOString().split("T")[0];
-    const dayNum = dayDate.getDate();
-    const monthName = dayDate.toLocaleDateString("en-US", { month: "short" });
-    const isToday = dateStr === todayStr;
-    const isWeekend = dayName === "Saturday" || dayName === "Sunday";
-
-    return {
-      dayName,
-      dateStr,
-      dayNum,
-      monthName,
-      isToday,
-      isWeekend,
-    };
-  });
-}
-
 const STATIC_WEEK_DAYS = ALL_WEEK_DAYS.map((dayName, idx) => ({
   dayName,
   dateStr: `day-${idx + 1}`,
@@ -70,19 +51,108 @@ const STATIC_WEEK_DAYS = ALL_WEEK_DAYS.map((dayName, idx) => ({
   isWeekend: dayName === "Saturday" || dayName === "Sunday",
 }));
 
+export type GridColumnsMode = 7 | 4 | 3 | 1;
+
+interface GridOption {
+  cols: GridColumnsMode;
+  label: string;
+  icon: LucideIcon;
+  title: string;
+}
+
+const GRID_OPTIONS: GridOption[] = [
+  { cols: 7, label: "All 7", icon: CalendarDays, title: "7 Columns — Full Week View" },
+  { cols: 4, label: "4", icon: Columns4, title: "4 Columns View" },
+  { cols: 3, label: "3", icon: Columns3, title: "3 Columns View" },
+  { cols: 1, label: "1", icon: Square, title: "Single Column View" },
+];
+
+const GRID_CONTAINER_CLASSES: Record<GridColumnsMode, string> = {
+  7: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3",
+  4: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5",
+  3: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
+  1: "grid grid-cols-1 gap-3.5 max-w-3xl mx-auto",
+};
+
 export function WeeklyHorizonTab({
   tasks,
   onAddTaskForDate,
   onEditTask,
   onDeleteTask,
+  onMoveTaskDate,
 }: WeeklyHorizonTabProps) {
-  const [weekDays, setWeekDays] = useState(STATIC_WEEK_DAYS);
+  const { settings } = useSettingsStore();
+  const startOfWeek = settings.startOfWeek || "monday";
+  const weekendDays = settings.weekendDays || ["saturday", "sunday"];
+
+  const [weekDays, setWeekDays] = useState(() => {
+    // Static initial state for SSR
+    return STATIC_WEEK_DAYS;
+  });
   const [todayStr, setTodayStr] = useState<string>("");
+  const [gridCols, setGridCols] = useState<GridColumnsMode>(7);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverDateStr, setDragOverDateStr] = useState<string | null>(null);
 
   useEffect(() => {
-    setWeekDays(getWeekDaysData());
+    setWeekDays(computeWeekDays(startOfWeek, weekendDays));
     setTodayStr(new Date().toISOString().split("T")[0]);
-  }, []);
+
+    try {
+      const saved = localStorage.getItem("taskify_weekly_grid_cols");
+      if (saved && ["7", "4", "3", "1"].includes(saved)) {
+        setGridCols(Number(saved) as GridColumnsMode);
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [startOfWeek, weekendDays]);
+
+  const handleGridChange = (cols: GridColumnsMode) => {
+    setGridCols(cols);
+    try {
+      localStorage.setItem("taskify_weekly_grid_cols", String(cols));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleDropOnDay = (e: React.DragEvent, targetDay: (typeof weekDays)[0]) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData("text/plain") || draggedTaskId;
+    setDraggedTaskId(null);
+    setDragOverDateStr(null);
+
+    if (!taskId) return;
+
+    const targetDayTasks = tasks.filter((t) => {
+      if (t.status === "staged") return false;
+      if (t.scheduledDate) return t.scheduledDate === targetDay.dateStr;
+      return targetDay.isToday;
+    });
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const isSameDay = task.scheduledDate === targetDay.dateStr || (!task.scheduledDate && targetDay.isToday);
+    if (isSameDay) return;
+
+    if (targetDayTasks.length >= 5) {
+      useToastStore.getState().addToast(`${targetDay.dayName} has reached the 5-slot daily limit`, "warning");
+      return;
+    }
+
+    if (onMoveTaskDate) {
+      onMoveTaskDate(taskId, targetDay.dateStr);
+    } else {
+      useTaskStore.getState().updateTask(taskId, {
+        scheduledDate: targetDay.dateStr,
+        status: "scheduled",
+      });
+    }
+
+    useToastStore.getState().addToast(`Rescheduled to ${targetDay.dayName}`, "success");
+  };
 
   // Total tasks scheduled in the 7-day window
   const weekDatesSet = new Set(weekDays.map((d) => d.dateStr));
@@ -109,28 +179,45 @@ export function WeeklyHorizonTab({
               {totalWeekTasks} / {maxTotalSlots} Slots Booked ({capacityPct}%)
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Plan and pace tasks across all 7 days (including weekends) up to 5 focus slots per day.
+          <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+            <span>Plan and pace tasks across all 7 days up to 5 focus slots per day.</span>
+            <span className="text-slate-400 hidden lg:inline">• Drag tasks between days with open slots</span>
           </p>
         </div>
 
-        {/* Progress bar across 35 weekly slots */}
-        <div className="w-full sm:w-48 space-y-1">
-          <div className="flex justify-between text-[10px] font-mono font-bold text-slate-500">
-            <span>Weekly Load</span>
-            <span>{totalWeekTasks}/35 slots</span>
-          </div>
-          <div className="h-2 w-full bg-slate-200/80 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-forest rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, (totalWeekTasks / maxTotalSlots) * 100)}%` }}
-            />
+        {/* ── Grid Switch System (All 7, 4, 3, 1) ────────────────────── */}
+        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:inline">
+            Layout:
+          </span>
+          <div className="flex items-center gap-1 bg-white/70 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 shadow-2xs">
+            {GRID_OPTIONS.map(({ cols, label, icon: Icon, title }) => {
+              const isSelected = gridCols === cols;
+              return (
+                <button
+                  key={cols}
+                  onClick={() => handleGridChange(cols)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                    isSelected
+                      ? "bg-forest text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
+                  )}
+                  title={title}
+                  aria-label={title}
+                  aria-pressed={isSelected}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* ── 7-Day Grid: Mon, Tue, Wed, Thu, Fri, Sat, Sun ───────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+      {/* ── Week Days Grid ─────────────────────────────────────────── */}
+      <div className={GRID_CONTAINER_CLASSES[gridCols]}>
         {weekDays.map((day) => {
           // Tasks scheduled for this day
           const dayTasks = tasks.filter((t) => {
@@ -138,23 +225,47 @@ export function WeeklyHorizonTab({
             if (t.scheduledDate) {
               return t.scheduledDate === day.dateStr;
             }
-            // Fallback for tasks created without explicit date that default to today
             return day.isToday;
           });
 
           const isFull = dayTasks.length >= 5;
           const slotsRemaining = Math.max(0, 5 - dayTasks.length);
 
+          const isDragOver = dragOverDateStr === day.dateStr;
+          const draggedTask = draggedTaskId ? tasks.find((t) => t.id === draggedTaskId) : null;
+          const isDraggedFromHere = draggedTask
+            ? (draggedTask.scheduledDate === day.dateStr || (!draggedTask.scheduledDate && day.isToday))
+            : false;
+          const canDrop = Boolean(draggedTaskId && (isDraggedFromHere || slotsRemaining > 0));
+
           return (
             <div
               key={day.dateStr}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = canDrop ? "move" : "none";
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                if (draggedTaskId) {
+                  setDragOverDateStr(day.dateStr);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  if (dragOverDateStr === day.dateStr) {
+                    setDragOverDateStr(null);
+                  }
+                }
+              }}
+              onDrop={(e) => handleDropOnDay(e, day)}
               className={cn(
                 "liquid-glass-light rounded-2xl p-3 sm:p-3.5 border min-h-[300px] flex flex-col justify-between transition-all",
-                day.isToday
-                  ? "border-emerald-400/60 shadow-[0_0_0_1.5px_rgba(16,185,129,0.3)] bg-emerald-500/[0.03]"
-                  : day.isWeekend
-                  ? "border-amber-200/50 bg-amber-500/[0.015]"
-                  : "border-white/80"
+                isDragOver && canDrop && "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/10 shadow-lg scale-[1.01]",
+                isDragOver && !canDrop && "ring-2 ring-red-400 border-red-400 bg-red-500/10",
+                !isDragOver && day.isToday && "border-emerald-400/60 shadow-[0_0_0_1.5px_rgba(16,185,129,0.3)] bg-emerald-500/[0.03]",
+                !isDragOver && !day.isToday && day.isWeekend && "border-amber-200/50 bg-amber-500/[0.015]",
+                !isDragOver && !day.isToday && !day.isWeekend && "border-white/80"
               )}
             >
               {/* Day Header */}
@@ -213,28 +324,62 @@ export function WeeklyHorizonTab({
 
                 {/* Scheduled Tasks in this Day */}
                 <div className="space-y-1.5">
+                  {/* Drop feedback indicator when dragging over with open slots */}
+                  {isDragOver && canDrop && !isDraggedFromHere && (
+                    <div className="py-2 px-2.5 rounded-xl border-2 border-dashed border-emerald-500 bg-emerald-500/15 text-emerald-800 text-[11px] font-bold flex items-center justify-center gap-1.5 animate-pulse my-1.5">
+                      <ArrowDown className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Drop to reschedule here</span>
+                    </div>
+                  )}
+
+                  {isDragOver && !canDrop && (
+                    <div className="py-2 px-2.5 rounded-xl border-2 border-dashed border-red-400 bg-red-50 text-red-600 text-[11px] font-bold flex items-center justify-center gap-1.5 my-1.5">
+                      <Lock className="h-3 w-3 text-red-500" />
+                      <span>5/5 Slots Full</span>
+                    </div>
+                  )}
+
                   {dayTasks.map((t) => (
                     <div
                       key={t.id}
-                      className="group/card p-2 rounded-xl bg-white/80 hover:bg-white border border-white/90 shadow-2xs transition-all space-y-1.5"
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", t.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        setDraggedTaskId(t.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedTaskId(null);
+                        setDragOverDateStr(null);
+                      }}
+                      className={cn(
+                        "group/card p-2 rounded-xl bg-white/80 hover:bg-white border border-white/90 shadow-2xs transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
+                        draggedTaskId === t.id && "opacity-40 ring-2 ring-forest scale-95"
+                      )}
                     >
                       <div className="flex items-start justify-between gap-1.5">
-                        <span
-                          className={cn(
-                            "text-xs font-semibold text-slate-800 truncate leading-snug flex-1",
-                            t.status === "done" && "line-through text-slate-400"
-                          )}
-                          title={t.title}
-                        >
-                          {t.title}
-                        </span>
+                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                          <GripVertical className="h-3 w-3 text-slate-300 group-hover/card:text-slate-500 shrink-0 opacity-60 group-hover/card:opacity-100 transition-opacity" />
+                          <span
+                            className={cn(
+                              "text-xs font-semibold text-slate-800 truncate leading-snug flex-1",
+                              t.status === "done" && "line-through text-slate-400"
+                            )}
+                            title={t.title}
+                          >
+                            {t.title}
+                          </span>
+                        </div>
 
                         {/* Inline Edit/Delete on Hover */}
                         <div className="opacity-0 group-hover/card:opacity-100 flex items-center gap-1 shrink-0 transition-opacity">
                           {onEditTask && (
                             <button
-                              onClick={() => onEditTask(t)}
-                              className="text-slate-400 hover:text-slate-700 p-0.5 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditTask(t);
+                              }}
+                              className="text-slate-400 hover:text-slate-700 p-0.5 rounded cursor-pointer"
                               title="Edit task"
                             >
                               <Pencil className="h-2.5 w-2.5" />
@@ -242,8 +387,11 @@ export function WeeklyHorizonTab({
                           )}
                           {onDeleteTask && (
                             <button
-                              onClick={() => onDeleteTask(t.id)}
-                              className="text-slate-400 hover:text-red-600 p-0.5 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteTask(t.id);
+                              }}
+                              className="text-slate-400 hover:text-red-600 p-0.5 rounded cursor-pointer"
                               title="Delete task"
                             >
                               <Trash2 className="h-2.5 w-2.5" />
@@ -252,7 +400,7 @@ export function WeeklyHorizonTab({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 pl-4">
                         <ArchetypeBadge archetype={t.archetype} task={t} />
                         <PriorityBadge priority={t.priority} />
                       </div>

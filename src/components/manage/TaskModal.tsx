@@ -90,8 +90,27 @@ export function TaskModal({
   initialScheduledDate,
 }: TaskModalProps) {
   const { tasks } = useTaskStore();
-  const todayTasksCount = tasks.filter((t) => t.status !== "staged").length;
-  const isTodayFull = todayTasksCount >= DEFAULT_TASK_CONFIG.slotCapacity && !taskToEdit;
+  const [todayStr, setTodayStr] = useState<string>("");
+  const [scheduledDate, setScheduledDate] = useState<string>(initialScheduledDate || "");
+
+  // Initialize today's date on client mount to avoid unstable prerender
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setTodayStr(today);
+    if (!scheduledDate) {
+      setScheduledDate(initialScheduledDate || today);
+    }
+  }, [initialScheduledDate, scheduledDate]);
+
+  const targetDate = scheduledDate || todayStr;
+  const targetDateTasksCount = tasks.filter((t) => {
+    if (t.status === "staged") return false;
+    if (t.scheduledDate && targetDate) {
+      return t.scheduledDate === targetDate;
+    }
+    return targetDate === todayStr;
+  }).length;
+  const isTargetDateFull = targetDateTasksCount >= DEFAULT_TASK_CONFIG.slotCapacity && !taskToEdit;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const subItemInputRef = useRef<HTMLInputElement>(null);
@@ -109,18 +128,7 @@ export function TaskModal({
   const [subItems, setSubItems] = useState<{ id: string; label: string; done: boolean }[]>([]);
   
   const [isScheduledToday, setIsScheduledToday] = useState(true);
-  const [todayStr, setTodayStr] = useState<string>("");
-  const [scheduledDate, setScheduledDate] = useState<string>(initialScheduledDate || "");
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-
-  // Initialize today's date on client mount to avoid unstable prerender
-  useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    setTodayStr(today);
-    if (!scheduledDate) {
-      setScheduledDate(initialScheduledDate || today);
-    }
-  }, [initialScheduledDate]);
 
   // Click outside listener for dropdown
   useEffect(() => {
@@ -160,7 +168,7 @@ export function TaskModal({
         const targetDate = initialScheduledDate || new Date().toISOString().split("T")[0];
         setScheduledDate(targetDate);
         const shouldSchedule =
-          defaultScheduleToday !== undefined ? defaultScheduleToday : !isTodayFull;
+          defaultScheduleToday !== undefined ? defaultScheduleToday : !isTargetDateFull;
         setIsScheduledToday(shouldSchedule);
       }
       setSubItemInput("");
@@ -169,7 +177,7 @@ export function TaskModal({
       // Auto-focus title on open
       setTimeout(() => titleInputRef.current?.focus(), 80);
     }
-  }, [taskToEdit, isOpen, isTodayFull, initialScheduledDate, defaultScheduleToday]);
+  }, [taskToEdit, isOpen, isTargetDateFull, initialScheduledDate, defaultScheduleToday]);
 
   // Sub-items management (Checklist)
   const handleAddSubItem = () => {
@@ -658,12 +666,12 @@ export function TaskModal({
             </div>
           )}
 
-          {/* Friendly capacity warning if scheduling for today exceeds 5 slots */}
-          {isScheduledToday && isTodayFull && todayStr && scheduledDate === todayStr && (
+          {/* Friendly capacity warning if scheduling for date exceeds 5 slots */}
+          {isScheduledToday && isTargetDateFull && targetDate && (
             <div className="flex items-start gap-1.5 p-2 bg-amber-500/10 border border-amber-300/40 rounded-xl text-amber-800 text-[11px] leading-tight">
               <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
               <span>
-                Today already has {todayTasksCount} slots booked (exceeds 5-slot limit).
+                {targetDate === todayStr ? "Today" : targetDate} already has {targetDateTasksCount} slots booked (exceeds 5-slot limit).
               </span>
             </div>
           )}
