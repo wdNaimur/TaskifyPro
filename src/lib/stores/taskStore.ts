@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Task, TaskStatus } from "@/types";
-import { INITIAL_SEED_TASKS, ENABLE_DEMO_SEED_DATA } from "@/lib/constants";
+import { createDevTestTasks } from "@/lib/constants";
 import { useToastStore } from "./toastStore";
 import { triggerConfetti } from "@/lib/utils/confetti";
 
@@ -20,13 +20,15 @@ interface TaskState {
   moveTaskToToday: (id: string) => void;
   incrementCounter: (id: string) => void;
   addTimeToTask: (id: string, minutes: number) => void;
+  loadDevDemoTasks: () => void;
+  clearAllTasks: () => void;
   resetToSeedData: () => void;
 }
 
 export const useTaskStore = create<TaskState>()(
   persist(
     (set, get) => ({
-      tasks: ENABLE_DEMO_SEED_DATA ? INITIAL_SEED_TASKS : [],
+      tasks: [],
       selectedTab: "daily",
       setSelectedTab: (tab) => set({ selectedTab: tab }),
 
@@ -196,12 +198,28 @@ export const useTaskStore = create<TaskState>()(
         }));
       },
 
+      loadDevDemoTasks: () => {
+        const fresh = createDevTestTasks();
+        set({ tasks: fresh });
+        useToastStore.getState().addToast("Filled 5 test tasks across Today & Backlog", "success");
+      },
+
+      clearAllTasks: () => {
+        set({ tasks: [] });
+        useToastStore.getState().addToast("Cleared all tasks", "info");
+      },
+
       resetToSeedData: () => {
-        set({ tasks: INITIAL_SEED_TASKS });
+        const fresh = createDevTestTasks();
+        set({ tasks: fresh });
       },
     }),
     {
       name: "taskify-tasks-storage",
+      partialize: (state) => ({
+        tasks: state.tasks,
+        selectedTab: state.selectedTab,
+      }),
     }
   )
 );

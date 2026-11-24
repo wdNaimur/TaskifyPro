@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, FlaskConical } from "lucide-react";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { DailyPlanTab } from "@/components/manage/DailyPlanTab";
 import { WeeklyHorizonTab } from "@/components/manage/WeeklyHorizonTab";
@@ -20,14 +20,27 @@ export default function ManagePage() {
     deleteTask,
     reorderTasks,
     moveTaskToToday,
+    loadDevDemoTasks,
   } = useTaskStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [selectedScheduleDate, setSelectedScheduleDate] = useState<string | undefined>(undefined);
+  const [todayStr, setTodayStr] = useState<string>("");
 
-  // Filter tasks into Today vs Backlog
-  const todayTasks = tasks.filter((t) => t.status !== "staged");
+  useEffect(() => {
+    setTodayStr(new Date().toISOString().split("T")[0]);
+  }, []);
+
+  // Filter tasks into Today vs Backlog (strictly synchronized with today's scheduled date)
+  const todayTasks = tasks.filter((t) => {
+    if (t.status === "staged") return false;
+    if (!todayStr) return true; // fallback during SSR
+    if (t.scheduledDate) {
+      return t.scheduledDate === todayStr;
+    }
+    return true; // legacy/unspecified tasks default to today
+  });
   const backlogTasks = tasks.filter((t) => t.status === "staged");
 
   const handleOpenCreateModal = () => {
@@ -101,6 +114,16 @@ export default function ManagePage() {
             </button>
           </div>
 
+          {/* Fill Dev Test Tasks Button */}
+          <button
+            onClick={loadDevDemoTasks}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 border border-amber-300/40 transition-all cursor-pointer"
+            title="Fill 5 test tasks across Today & Backlog"
+          >
+            <FlaskConical className="h-3.5 w-3.5 text-amber-600" />
+            <span className="hidden sm:inline">Fill Test Tasks</span>
+          </button>
+
           {/* "+ Add Task" Button */}
           <button
             onClick={handleOpenCreateModal}
@@ -133,6 +156,9 @@ export default function ManagePage() {
           }}
           onEditTask={handleOpenEditModal}
           onDeleteTask={deleteTask}
+          onMoveTaskDate={(taskId, dateStr) => {
+            updateTask(taskId, { scheduledDate: dateStr, status: "scheduled" });
+          }}
         />
       )}
 
@@ -155,7 +181,7 @@ export default function ManagePage() {
         onSave={handleSaveTask}
         taskToEdit={taskToEdit}
         defaultScheduleToday={selectedTab !== "backlog"}
-        initialScheduledDate={selectedScheduleDate}
+        initialScheduledDate={selectedScheduleDate || todayStr}
       />
     </div>
   );

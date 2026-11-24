@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,16 +12,20 @@ import {
   Plus,
   ArrowUpRight,
   Lock,
+  FlaskConical,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskModal } from "@/components/manage/TaskModal";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { Task } from "@/types";
 
 export default function TasksPage() {
   const router = useRouter();
+  const isHydrated = useHydrated();
   const {
     tasks,
     addTask,
@@ -29,6 +33,8 @@ export default function TasksPage() {
     toggleSubItem,
     incrementCounter,
     moveTaskToToday,
+    loadDevDemoTasks,
+    clearAllTasks,
   } = useTaskStore();
 
   const {
@@ -40,9 +46,22 @@ export default function TasksPage() {
   } = usePomodoroStore();
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isDevMenuOpen, setIsDevMenuOpen] = useState(false);
+  const [todayStr, setTodayStr] = useState<string>("");
 
-  // Filter tasks
-  const todayTasks = tasks.filter((t) => t.status !== "staged");
+  useEffect(() => {
+    setTodayStr(new Date().toISOString().split("T")[0]);
+  }, []);
+
+  // Filter tasks: Synchronized strictly with today's date
+  const todayTasks = tasks.filter((t) => {
+    if (t.status === "staged") return false;
+    if (!todayStr) return true; // fallback during SSR
+    if (t.scheduledDate) {
+      return t.scheduledDate === todayStr;
+    }
+    return true; // default/unspecified date tasks belong to today
+  });
   const pendingTasks = todayTasks.filter((t) => t.status !== "done");
   const completedTasks = todayTasks.filter((t) => t.status === "done");
   const stagedTasks = tasks.filter((t) => t.status === "staged");
@@ -88,6 +107,8 @@ export default function TasksPage() {
     }
   };
 
+
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 pb-24 select-none">
       {/* ── Modal for creating tasks directly from /tasks ─────────── */}
@@ -95,6 +116,8 @@ export default function TasksPage() {
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
         onSave={(newTask) => addTask(newTask)}
+        defaultScheduleToday={true}
+        initialScheduledDate={todayStr}
       />
 
       {/* ── Active Focus Banner (Clean slim teleport bar) ─────────── */}
@@ -141,6 +164,49 @@ export default function TasksPage() {
 
         {/* Right side: Quick Add button + Progress Badge */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+          {/* Dev Test Suite Action */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDevMenuOpen(!isDevMenuOpen)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 border border-amber-300/40 transition-all cursor-pointer"
+              title="Development & Testing Controls"
+            >
+              <FlaskConical className="h-3.5 w-3.5 text-amber-600" />
+              <span>Dev Test</span>
+            </button>
+
+            {isDevMenuOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-0 mt-2 w-60 p-2 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-xl z-50 text-slate-800 space-y-1"
+              >
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Development Task Suite
+                </div>
+                <button
+                  onClick={() => {
+                    loadDevDemoTasks();
+                    setIsDevMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold hover:bg-amber-50 text-amber-900 transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Fill 5 Test Tasks</span>
+                  <span className="text-[10px] text-amber-600 font-mono font-bold bg-amber-100 px-1.5 py-0.5 rounded">Fill</span>
+                </button>
+                <button
+                  onClick={() => {
+                    clearAllTasks();
+                    setIsDevMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold hover:bg-red-50 text-red-600 transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span>Clear All Tasks</span>
+                  <span className="text-[10px] text-red-400 font-mono font-bold bg-red-100 px-1.5 py-0.5 rounded">Wipe</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           {todayTasks.length < 5 ? (
             <button
               onClick={() => setIsTaskModalOpen(true)}
@@ -180,7 +246,14 @@ export default function TasksPage() {
 
       {/* ── Main Task Execution Queue ───────────────────────────────── */}
       <div className="space-y-4">
-        {todayTasks.length === 0 ? (
+        {!isHydrated ? (
+          /* Hydration Skeleton (Prevents flashing "No tasks" screen on reload) */
+          <div className="space-y-3 pt-1 animate-pulse" aria-label="Loading tasks">
+            <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
+            <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
+            <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
+          </div>
+        ) : todayTasks.length === 0 ? (
           /* Empty State */
           <div className="liquid-glass-light rounded-3xl p-10 text-center border border-white/80 shadow-xs space-y-3">
             <Calendar className="h-10 w-10 text-slate-300 mx-auto" />
@@ -190,13 +263,22 @@ export default function TasksPage() {
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Add a new task directly, or pull from your backlog to fill your 5 focus slots.
             </p>
-            <div className="pt-2 flex items-center justify-center gap-2.5">
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5">
               <button
                 onClick={() => setIsTaskModalOpen(true)}
                 className="flex items-center gap-1.5 px-4 py-2.5 bg-forest hover:bg-forest-light text-white rounded-2xl text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Add First Task</span>
+              </button>
+
+              <button
+                onClick={loadDevDemoTasks}
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 rounded-2xl text-xs font-bold border border-amber-300/40 transition-all cursor-pointer"
+                title="Fill today with representative test tasks for each archetype"
+              >
+                <FlaskConical className="h-3.5 w-3.5 text-amber-600" />
+                <span>Fill Test Tasks</span>
               </button>
 
               {stagedTasks.length > 0 && (
