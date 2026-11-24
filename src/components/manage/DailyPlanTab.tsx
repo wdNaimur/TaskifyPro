@@ -33,7 +33,7 @@ export function DailyPlanTab({
       {/* ── Capacity Throttle Guardrail (5 Slots) ─────────────────── */}
       <div className="liquid-glass-light rounded-3xl p-4 sm:p-5 border border-white/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-sm text-slate-800">
               Today&apos;s Capacity Throttle
             </h3>
@@ -77,7 +77,7 @@ export function DailyPlanTab({
 
       {/* ── Allocated Slots List (Management Mode) ─────────────────── */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex items-center justify-between px-1 flex-wrap gap-1">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             Allocated Slots ({tasks.length} of {slotCapacity})
           </h4>

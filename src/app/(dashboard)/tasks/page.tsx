@@ -163,7 +163,7 @@ export default function TasksPage() {
         </div>
 
         {/* Right side: Quick Add button + Progress Badge */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
           {/* Dev Test Suite Action */}
           <div className="relative">
             <button

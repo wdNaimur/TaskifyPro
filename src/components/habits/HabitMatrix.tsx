@@ -86,8 +86,10 @@ export function HabitMatrix({
 
   return (
     <div className="liquid-glass-light rounded-3xl p-4 sm:p-6 border border-white/80 shadow-xs space-y-4 select-none">
-      {/* ── Table Header / Days of the Week ───────────────────────── */}
-      <div className="grid grid-cols-12 gap-2 pb-2 border-b border-slate-200/60 items-center text-xs font-bold text-slate-500">
+      <div className="overflow-x-auto -mx-1 px-1 scrollbar-thin">
+        <div className="min-w-[500px]">
+          {/* ── Table Header / Days of the Week ───────────────────────── */}
+          <div className="grid grid-cols-12 gap-2 pb-2 border-b border-slate-200/60 items-center text-xs font-bold text-slate-500">
         <div className="col-span-5 sm:col-span-4 px-2">
           <span>Habit &amp; Streak</span>
         </div>
@@ -139,7 +141,7 @@ export function HabitMatrix({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {/* Streak Flame Badge */}
                   <div
                     className={cn(
@@ -236,6 +238,8 @@ export function HabitMatrix({
             </div>
           );
         })}
+      </div>
+        </div>
       </div>
     </div>
   );

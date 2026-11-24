@@ -76,9 +76,9 @@ export default function ManagePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto flex-wrap">
           {/* Liquid Glass Tab Switcher */}
-          <div className="flex bg-white/60 backdrop-blur-md p-1 rounded-2xl border border-white/80 shadow-xs">
+          <div className="flex bg-white/60 backdrop-blur-md p-1 rounded-2xl border border-white/80 shadow-xs max-w-full overflow-x-auto shrink-0">
             <button
               onClick={() => setSelectedTab("daily")}
               className={cn(

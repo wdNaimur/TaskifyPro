@@ -170,7 +170,7 @@ export function WeeklyHorizonTab({
       {/* ── Weekly Capacity Gauge Header ────────────────────────────── */}
       <div className="liquid-glass-light rounded-3xl p-4 sm:p-5 border border-white/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-forest" />
               <span>Full Week Horizon ({weekDays[0].monthName} {weekDays[0].dayNum} – {weekDays[6].monthName} {weekDays[6].dayNum})</span>
@@ -186,11 +186,11 @@ export function WeeklyHorizonTab({
         </div>
 
         {/* ── Grid Switch System (All 7, 4, 3, 1) ────────────────────── */}
-        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+        <div className="flex items-center gap-2 self-start sm:self-center shrink-0 max-w-full overflow-x-auto">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:inline">
             Layout:
           </span>
-          <div className="flex items-center gap-1 bg-white/70 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center gap-1 bg-white/70 backdrop-blur-md p-1 rounded-2xl border border-slate-200/80 shadow-2xs shrink-0">
             {GRID_OPTIONS.map(({ cols, label, icon: Icon, title }) => {
               const isSelected = gridCols === cols;
               return (
