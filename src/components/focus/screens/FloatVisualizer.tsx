@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ interface FloatVisualizerProps {
   timeLeft: number;
   isRunning: boolean;
   isControlsVisible?: boolean;
+  isRotated?: boolean;
 }
 
 // Individual animated rolling bubble digit with fixed block width & playful angle
@@ -65,9 +66,36 @@ export function FloatVisualizer({
   timeLeft,
   isRunning,
   isControlsVisible = true,
+  isRotated = false,
 }: FloatVisualizerProps) {
   // Option to toggle between Hours:Minutes ("02:21") and Total Minutes ("141:00") when >= 60 min
   const [preferTotalMinutes, setPreferTotalMinutes] = useState(false);
+  const [isPhysicalLandscape, setIsPhysicalLandscape] = useState(false);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsPhysicalLandscape(window.innerWidth > window.innerHeight);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
+  }, []);
+
+  // Compute font size from vertical perspective:
+  // - If software isRotated (portrait phone turned 90°): user's visual height is physical width (vw).
+  //   Fills ~60% of vertical perspective: min(60vw, 30vh).
+  // - If physically in landscape (width > height): user's visual height is physical height (vh).
+  //   Fills ~60% of vertical perspective: min(28vw, 60vh).
+  // - If standard portrait: width is the limiting factor: clamp(4.25rem, min(34vw, 38vh), 22rem).
+  const dynamicFontSize = isRotated
+    ? "clamp(4.5rem, min(60vw, 30vh), 22rem)"
+    : isPhysicalLandscape
+    ? "clamp(4.5rem, min(28vw, 60vh), 22rem)"
+    : "clamp(4.25rem, min(34vw, 38vh), 22rem)";
 
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);
@@ -108,7 +136,8 @@ export function FloatVisualizer({
           repeat: Infinity,
           ease: "easeInOut",
         }}
-        className="relative flex items-center justify-center select-none leading-none text-7xl sm:text-8xl md:text-[11rem] lg:text-[15rem] xl:text-[18rem] font-bold max-w-full px-2"
+        className="relative flex items-center justify-center select-none leading-none font-bold max-w-full px-1"
+        style={{ fontSize: dynamicFontSize }}
       >
         {/* ── Left Pair: Hours (or Minutes) ─────────────────────────── */}
         <div className="flex items-center">

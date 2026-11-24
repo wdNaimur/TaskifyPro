@@ -162,7 +162,7 @@ export function CurvedArcDial({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       className={cn(
-        "relative w-full max-w-[480px] h-[150px] mx-auto select-none touch-none",
+        "relative w-full max-w-[min(94vw,480px)] aspect-[3.2/1] h-auto mx-auto select-none touch-none",
         disabled ? "cursor-default opacity-80" : "cursor-grab active:cursor-grabbing"
       )}
     >

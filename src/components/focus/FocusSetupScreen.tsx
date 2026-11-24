@@ -112,7 +112,7 @@ export function FocusSetupScreen({
 
       {/* ── 2. Giant Digital Clock Display ─────────────────────────── */}
       <div className="space-y-1">
-        <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight text-slate-800 font-sans tabular-nums select-none leading-none">
+        <h1 className="text-[clamp(3.5rem,14vw,6.5rem)] font-black tracking-tight text-slate-800 font-sans tabular-nums select-none leading-none">
           {formattedMinutes}
         </h1>
         <p className="text-[11px] font-bold tracking-[0.22em] text-slate-400 uppercase pt-1">
@@ -156,13 +156,13 @@ export function FocusSetupScreen({
       {/* ── 5. Bottom: Break Time Selector & Visualizer Choice ──────── */}
       <div className="w-full max-w-md bg-white/70 rounded-3xl p-4 border border-slate-200/80 shadow-xs space-y-3.5 mb-6">
         {/* Break Duration Selector */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
             <Coffee className="h-3.5 w-3.5 text-amber-600" />
             <span>Break Duration</span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {BREAK_PRESETS.map((b) => {
               const isSelected = breakMinutes === b.minutes;
               return (
@@ -185,13 +185,13 @@ export function FocusSetupScreen({
         </div>
 
         {/* Visualizer Mode Selection */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
             <Sparkles className="h-3.5 w-3.5 text-purple-600" />
             <span>Immersion Screen</span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {VISUALIZER_OPTIONS.map((opt) => {
               const isSelected = visualizerMode === opt.id;
               return (

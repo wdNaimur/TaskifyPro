@@ -14,6 +14,7 @@ import {
   VolumeX,
   Check,
   Sun,
+  RotateCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
@@ -197,6 +198,52 @@ export default function FocusPage() {
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
+  // Screen Orientation / Desk Clock StandBy rotation mode
+  const [isRotated, setIsRotated] = useState(false);
+
+  const toggleScreenRotation = useCallback(async () => {
+    try {
+      if (typeof screen !== "undefined" && screen.orientation && "lock" in screen.orientation) {
+        if (!isRotated) {
+          if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen().catch(() => {});
+            setIsFullscreen(true);
+          }
+          await (screen.orientation as any).lock("landscape").catch(() => {});
+        } else {
+          await (screen.orientation as any).unlock?.();
+        }
+      }
+    } catch {
+      // Fallback to software CSS rotation
+    }
+
+    setIsRotated((prev) => {
+      const next = !prev;
+      if (next) {
+        toast.info("Desk Clock mode active (Landscape)");
+      } else {
+        toast.info("Standard orientation restored");
+      }
+      return next;
+    });
+  }, [isRotated]);
+
+  // Reset software rotation if device is physically rotated to landscape
+  useEffect(() => {
+    const handleOrientation = () => {
+      if (window.innerWidth > window.innerHeight && isRotated) {
+        setIsRotated(false);
+      }
+    };
+    window.addEventListener("resize", handleOrientation);
+    window.addEventListener("orientationchange", handleOrientation);
+    return () => {
+      window.removeEventListener("resize", handleOrientation);
+      window.removeEventListener("orientationchange", handleOrientation);
+    };
+  }, [isRotated]);
+
   // Inactivity auto-hide timer (2.5 seconds) - hides header during active session
   const [isControlsVisible, setIsControlsVisible] = useState(true);
 
@@ -266,74 +313,111 @@ export default function FocusPage() {
           isRunning ? pauseTimer() : startTimer();
         }
       }}
+      style={
+        isRotated
+          ? {
+              transform: "rotate(90deg)",
+              transformOrigin: "center center",
+              width: "100vh",
+              height: "100vw",
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              marginTop: "-50vw",
+              marginLeft: "-50vh",
+              zIndex: 50,
+            }
+          : undefined
+      }
       className={cn(
-        "relative h-screen w-screen flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden transition-colors duration-700",
-        !isSessionActive ? "bg-[#F5F6F8] text-slate-800" : "bg-black text-white cursor-pointer",
+        "relative h-screen w-screen flex flex-col justify-between select-none overflow-hidden transition-all duration-500",
+        !isSessionActive
+          ? "bg-[#F5F6F8] text-slate-800 p-6 sm:p-10"
+          : "bg-black text-white cursor-pointer p-0",
         !isControlsVisible && isRunning && "cursor-none"
       )}
     >
-      {/* ── Top Bar (Back button, Screen switcher, Fullscreen) ──────── */}
+      {/* ── Top Bar Overlay (Back button, Screen switcher, Controls) ──── */}
       <header
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "relative z-30 flex items-center justify-between w-full transition-opacity duration-500 cursor-default",
-          !isControlsVisible && isRunning ? "opacity-0 pointer-events-none" : "opacity-100"
+          "z-30 w-full transition-all duration-500 cursor-default",
+          isSessionActive
+            ? "absolute top-0 inset-x-0 pt-3 sm:pt-5 pb-6 sm:pb-8 px-3 sm:px-8 bg-gradient-to-b from-black/85 via-black/45 to-transparent pointer-events-none"
+            : "relative w-full",
+          isSessionActive && !isControlsVisible && isRunning
+            ? "opacity-0 -translate-y-3 pointer-events-none"
+            : "opacity-100 translate-y-0"
         )}
       >
-        {/* Left: Back to Tasks */}
-        <button
-          onClick={() => router.push("/tasks")}
-          className={cn(
-            "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer",
-            !isSessionActive
-              ? "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/80 shadow-2xs"
-              : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border-white/5 backdrop-blur-md"
+        <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-2 pointer-events-auto flex-wrap sm:flex-nowrap">
+          {/* Left: Back to Tasks */}
+          <button
+            onClick={() => router.push("/tasks")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer shrink-0",
+              !isSessionActive
+                ? "bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border-slate-200/80 shadow-2xs"
+                : "bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border-white/10 backdrop-blur-md"
+            )}
+            title="Back to Tasks"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Tasks</span>
+          </button>
+
+          {/* Center: When session active, display Visualizer switcher */}
+          {isSessionActive ? (
+            <>
+              {/* Mobile Single Toggle Button (Saves ~80px on narrow screens) */}
+              <button
+                type="button"
+                onClick={() => handleModeChange(visualizerMode === "float" ? "forest" : "float")}
+                className="sm:hidden px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white border border-white/15 backdrop-blur-md shadow-2xs shrink-0"
+                title="Tap to switch between Float and Forest modes"
+              >
+                <span>{visualizerMode === "float" ? "🫧 Float" : "🌲 Forest"}</span>
+              </button>
+
+              {/* Tablet/Desktop Dual Pill Switcher */}
+              <div className="hidden sm:flex items-center gap-1 p-1 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shrink-0">
+                <button
+                  onClick={() => handleModeChange("float")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                    visualizerMode === "float"
+                      ? "bg-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.15)]"
+                      : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                  )}
+                >
+                  <span>🫧</span>
+                  <span>Float</span>
+                </button>
+
+                <button
+                  onClick={() => handleModeChange("forest")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                    visualizerMode === "forest"
+                      ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                      : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                  )}
+                >
+                  <span>🌲</span>
+                  <span>Forest</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center hidden sm:block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                Focus Setup &amp; Configuration
+              </span>
+            </div>
           )}
-          title="Back to Tasks"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Tasks</span>
-        </button>
 
-        {/* Center: When session active, display Task Title & Visualizer switcher */}
-        {isSessionActive ? (
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
-            <button
-              onClick={() => handleModeChange("float")}
-              className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                visualizerMode === "float"
-                  ? "bg-white/20 text-white shadow-[0_0_12px_rgba(255,255,255,0.15)]"
-                  : "text-white/40 hover:text-white/80 hover:bg-white/5"
-              )}
-            >
-              <span>🫧</span>
-              <span>Float</span>
-            </button>
-
-            <button
-              onClick={() => handleModeChange("forest")}
-              className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
-                visualizerMode === "forest"
-                  ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-                  : "text-white/40 hover:text-white/80 hover:bg-white/5"
-              )}
-            >
-              <span>🌲</span>
-              <span>Forest</span>
-            </button>
-          </div>
-        ) : (
-          <div className="text-center">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-              Focus Setup &amp; Configuration
-            </span>
-          </div>
-        )}
-
-        {/* Right: In-Session Controls + Fullscreen */}
-        <div className="flex items-center gap-2">
+          {/* Right: In-Session Controls + Fullscreen */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
           {/* Ambient Soundscape Controller */}
           <div className="relative">
             <button
@@ -449,7 +533,7 @@ export default function FocusPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Finish Task</span>
+              <span className="hidden sm:inline">Finish</span>
             </button>
           )}
 
@@ -464,7 +548,7 @@ export default function FocusPage() {
               title="Stop session and return to setup"
             >
               <StopCircle className="h-3.5 w-3.5" />
-              <span>Stop</span>
+              <span className="hidden sm:inline">Stop</span>
             </button>
           )}
 
@@ -508,6 +592,26 @@ export default function FocusPage() {
             </span>
           </button>
 
+          {/* Screen Rotation / Desk Clock Mode */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleScreenRotation();
+            }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer backdrop-blur-md",
+              isRotated
+                ? "bg-purple-500/20 text-purple-300 border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+                : !isSessionActive
+                ? "bg-white/80 hover:bg-white text-slate-700 border-slate-200/80 shadow-2xs"
+                : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border-white/5"
+            )}
+            title={isRotated ? "Exit Desk Clock mode" : "Rotate to Desk Clock (Landscape)"}
+          >
+            <RotateCw className={cn("h-3.5 w-3.5 transition-transform duration-300", isRotated ? "rotate-90 text-purple-400" : "opacity-70")} />
+            <span className="hidden sm:inline">{isRotated ? "Desk Clock" : "Rotate"}</span>
+          </button>
+
           {/* Fullscreen toggle */}
           <button
             onClick={(e) => {
@@ -529,10 +633,16 @@ export default function FocusPage() {
             )}
           </button>
         </div>
+        </div>
       </header>
 
       {/* ── Main Canvas ────────────────────────────────────────────── */}
-      <main className="relative z-10 flex flex-col items-center justify-center my-auto w-full">
+      <main
+        className={cn(
+          "relative z-10 flex flex-col items-center justify-center my-auto w-full",
+          isSessionActive ? "h-screen p-4 sm:p-8" : "w-full"
+        )}
+      >
         <AnimatePresence mode="wait">
           {!isSessionActive ? (
             /* ── STAGE 1: Setup Screen (Dialer, Priority Dropdown, Break Selector) ── */
@@ -575,13 +685,13 @@ export default function FocusPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-center w-full"
+              className="flex flex-col items-center justify-center w-full h-full"
             >
               {/* Task Title Banner (Auto-hides with controls) */}
               <div
                 className={cn(
-                  "mb-4 sm:mb-8 text-center max-w-lg px-4 transition-opacity duration-500",
-                  !isControlsVisible && isRunning ? "opacity-0 pointer-events-none" : "opacity-100"
+                  "absolute top-14 sm:top-20 inset-x-0 text-center max-w-lg mx-auto px-4 pointer-events-none transition-all duration-500",
+                  !isControlsVisible && isRunning ? "opacity-0 -translate-y-2" : "opacity-100 translate-y-0"
                 )}
               >
                 <p className="text-xs sm:text-sm font-semibold tracking-wide text-white/50 truncate">
@@ -595,6 +705,7 @@ export default function FocusPage() {
                   timeLeft={timeLeft}
                   isRunning={isRunning}
                   isControlsVisible={isControlsVisible}
+                  isRotated={isRotated}
                 />
               )}
 
@@ -603,6 +714,7 @@ export default function FocusPage() {
                   formattedTime={formattedTime}
                   progressRatio={progressRatio}
                   mode={mode}
+                  isRotated={isRotated}
                 />
               )}
 
@@ -625,9 +737,11 @@ export default function FocusPage() {
       </main>
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
-      <footer className="relative z-10 h-6 flex items-center justify-center pointer-events-none">
-        {/* Distraction-free clean footer */}
-      </footer>
+      {!isSessionActive && (
+        <footer className="relative z-10 h-6 flex items-center justify-center pointer-events-none">
+          {/* Distraction-free clean footer */}
+        </footer>
+      )}
       {/* ── Quick Create Task Modal ──────────────────────────────────── */}
       <TaskModal
         isOpen={isTaskModalOpen}

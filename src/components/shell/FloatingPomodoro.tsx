@@ -73,7 +73,7 @@ export function FloatingPomodoro() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 select-none">
+    <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-5 sm:bottom-5 z-40 select-none flex justify-center sm:justify-end pointer-events-none">
       <AnimatePresence mode="wait">
         {!isSessionActive ? (
           /* ── STATE 1: Idle — Sleek Floating Glass Capsule ─────────── */
@@ -85,7 +85,7 @@ export function FloatingPomodoro() {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleStartIdle}
-            className="group relative flex items-center gap-3 px-4 py-2.5 rounded-full bg-slate-950/85 hover:bg-slate-900/95 text-white backdrop-blur-2xl border border-emerald-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.4),0_0_20px_rgba(16,185,129,0.2)] transition-all cursor-pointer"
+            className="group pointer-events-auto relative flex items-center gap-3 px-4 py-2.5 rounded-full bg-slate-950/85 hover:bg-slate-900/95 text-white backdrop-blur-2xl border border-emerald-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.4),0_0_20px_rgba(16,185,129,0.2)] transition-all cursor-pointer"
             aria-label="Start Focus Session"
             title="Open Focus Mode"
           >
@@ -118,7 +118,7 @@ export function FloatingPomodoro() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 15 }}
             className={cn(
-              "group relative flex items-center gap-2.5 p-1.5 sm:p-2 rounded-2xl bg-slate-950/90 text-white backdrop-blur-2xl border transition-all duration-300",
+              "group pointer-events-auto relative flex items-center justify-between sm:justify-start gap-2.5 p-1.5 sm:p-2 rounded-2xl bg-slate-950/90 text-white backdrop-blur-2xl border transition-all duration-300 w-full sm:w-auto max-w-sm sm:max-w-none shadow-2xl",
               isRunning
                 ? "border-emerald-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_25px_rgba(16,185,129,0.25)]"
                 : "border-amber-500/30 shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_20px_rgba(245,158,11,0.2)]"
@@ -135,7 +135,7 @@ export function FloatingPomodoro() {
             {/* Click to open /focus Fullscreen */}
             <Link
               href="/focus"
-              className="flex items-center gap-3 pl-1 pr-1.5 py-0.5 text-left cursor-pointer group/link min-w-0 relative z-10"
+              className="flex items-center gap-3 pl-1 pr-1.5 py-0.5 text-left cursor-pointer group/link min-w-0 flex-1 sm:flex-initial relative z-10"
               title="Click to open Fullscreen Focus Page"
             >
               {/* Mini SVG Circular Progress Ring */}
@@ -181,7 +181,7 @@ export function FloatingPomodoro() {
               </div>
 
               {/* Countdown Digits & Title */}
-              <div className="min-w-0 pr-1">
+              <div className="min-w-0 pr-1 flex-1 sm:flex-initial">
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono font-bold text-sm tracking-tight text-white leading-none drop-shadow-sm">
                     {formattedTime}
@@ -195,7 +195,7 @@ export function FloatingPomodoro() {
                       isRunning ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
                     )}
                   />
-                  <p className="text-[10px] font-semibold text-white/60 truncate max-w-[125px]">
+                  <p className="text-[10px] font-semibold text-white/60 truncate max-w-[140px] sm:max-w-[180px] md:max-w-[220px]">
                     {activeTaskTitle || (mode === "work" ? "Deep Focus" : "Rest")}
                   </p>
                 </div>

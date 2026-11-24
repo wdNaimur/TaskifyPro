@@ -1,19 +1,54 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Coffee, TreePine } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ForestVisualizerProps {
   formattedTime: string;
   progressRatio: number;
   mode: "work" | "shortBreak" | "longBreak";
+  isRotated?: boolean;
 }
 
 export function ForestVisualizer({
   formattedTime,
   progressRatio,
   mode,
+  isRotated = false,
 }: ForestVisualizerProps) {
+  const [isPhysicalLandscape, setIsPhysicalLandscape] = useState(false);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsPhysicalLandscape(window.innerWidth > window.innerHeight);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
+  }, []);
+
+  // Compute sizing based on vertical perspective:
+  // - In rotated mode: vertical height is physical width (vw). Fill ~76% of vertical perspective.
+  // - In physical landscape: vertical height is physical height (vh). Fill ~76% of vertical perspective.
+  // - In standard portrait: fill 88% width / 76% height.
+  const svgSize = isRotated
+    ? "w-[min(76vw,76vh,440px)] h-[min(76vw,76vh,440px)]"
+    : isPhysicalLandscape
+    ? "w-[min(76vh,76vw,440px)] h-[min(76vh,76vw,440px)]"
+    : "w-[min(88vw,76vh,440px)] h-[min(88vw,76vh,440px)]";
+
+  const countdownTextSize = isRotated
+    ? "text-[clamp(2.5rem,min(11vw,11vh),4.5rem)]"
+    : isPhysicalLandscape
+    ? "text-[clamp(2.5rem,min(11vh,11vw),4.5rem)]"
+    : "text-[clamp(2.25rem,min(9vw,9vh),4.5rem)]";
+
   // SVG Radial Ring properties
   const radius = 135;
   const circumference = 2 * Math.PI * radius;
@@ -21,7 +56,10 @@ export function ForestVisualizer({
 
   return (
     <div className="relative flex items-center justify-center select-none">
-      <svg className="w-[320px] h-[320px] sm:w-[360px] sm:h-[360px] -rotate-90">
+      <svg
+        viewBox="0 0 320 320"
+        className={cn(svgSize, "-rotate-90")}
+      >
         {/* Background Track */}
         <circle
           cx="50%"
@@ -103,7 +141,7 @@ export function ForestVisualizer({
         </div>
 
         {/* Countdown Digits */}
-        <div className="font-mono font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight text-white drop-shadow-lg">
+        <div className={cn("font-mono font-bold tracking-tight text-white drop-shadow-lg", countdownTextSize)}>
           {formattedTime}
         </div>
 
