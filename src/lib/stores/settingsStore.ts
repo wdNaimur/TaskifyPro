@@ -11,6 +11,7 @@ export interface ExtendedSettings extends UserSettings {
   autoStartPomodoros: boolean;
   soundEffects: boolean;
   soundVolume: number;
+  keepScreenAwake: boolean;
 }
 
 interface SettingsState {
@@ -28,6 +29,7 @@ const INITIAL_SETTINGS: ExtendedSettings = {
   autoStartPomodoros: false,
   soundEffects: true,
   soundVolume: 0.5,
+  keepScreenAwake: true,
 };
 
 export const useSettingsStore = create<SettingsState>()(

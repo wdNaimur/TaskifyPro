@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { useHabitStore } from "@/lib/stores/habitStore";
+import { useSettingsStore } from "@/lib/stores/settingsStore";
+import { computeWeekDays } from "@/lib/utils/date";
 import {
   BarChart3,
   TrendingUp,
@@ -36,6 +38,7 @@ const STATIC_WEEK_VELOCITY = ALL_WEEK_DAYS.map((dayName, idx) => ({
   dayNumber: idx + 1,
   dateStr: `day-${idx + 1}`,
   isToday: false,
+  isWeekend: false,
   tasksDone: 0,
   habitsDone: 0,
   score: 0,
@@ -44,6 +47,10 @@ const STATIC_WEEK_VELOCITY = ALL_WEEK_DAYS.map((dayName, idx) => ({
 export default function ReportsPage() {
   const { tasks } = useTaskStore();
   const { habits, logs } = useHabitStore();
+  const { settings } = useSettingsStore();
+
+  const startOfWeek = settings?.startOfWeek || "monday";
+  const weekendDays = settings?.weekendDays || ["saturday", "sunday"];
 
   // ── Metrics Calculation ──────────────────────────────────────────
   const completedTasks = useMemo(() => tasks.filter((t) => t.status === "done"), [tasks]);
@@ -82,49 +89,38 @@ export default function ReportsPage() {
     return counts;
   }, [completedTasks]);
 
-  // 7-day velocity chart data (Monday to Sunday) - computed client-side to avoid unstable prerender
+  // 7-day velocity chart data - computed client-side to avoid unstable prerender
   const [weekVelocity, setWeekVelocity] = useState(STATIC_WEEK_VELOCITY);
 
   useEffect(() => {
-    const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
-    const jsDay = now.getDay();
-    const diffToMonday = jsDay === 0 ? -6 : 1 - jsDay;
+    const weekDays = computeWeekDays(startOfWeek, weekendDays);
 
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const computed = ALL_WEEK_DAYS.map((dayName, idx) => {
-      const dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + idx);
-      const dateStr = dayDate.toISOString().split("T")[0];
-      const isToday = dateStr === todayStr;
-
+    const computed = weekDays.map((day) => {
       // Completed tasks for this day (based on scheduledDate or updatedAt)
       const dayCompleted = completedTasks.filter((t) => {
         const d = (t.updatedAt || t.createdAt || "").split("T")[0];
-        return d === dateStr || t.scheduledDate === dateStr;
+        return d === day.dateStr || t.scheduledDate === day.dateStr;
       }).length;
 
       // Habit checks on this day
       const habitDoneCount = habits.filter((h) => {
-        return !!logs[`${h.id}_${dateStr}`]?.done;
+        return !!logs[`${h.id}_${day.dateStr}`]?.done;
       }).length;
 
       return {
-        dayName,
-        shortName: dayName.slice(0, 3),
-        dayNumber: dayDate.getDate(),
-        dateStr,
-        isToday,
+        dayName: day.dayName,
+        shortName: day.shortName,
+        dayNumber: day.dayNum,
+        dateStr: day.dateStr,
+        isToday: day.isToday,
+        isWeekend: day.isWeekend,
         tasksDone: dayCompleted,
         habitsDone: habitDoneCount,
         score: dayCompleted * 20 + habitDoneCount * 15,
       };
     });
     setWeekVelocity(computed);
-  }, [completedTasks, habits, logs]);
+  }, [completedTasks, habits, logs, startOfWeek, weekendDays]);
 
   const maxVelocityScore = useMemo(() => {
     return Math.max(100, ...weekVelocity.map((w) => w.score));
@@ -263,12 +259,21 @@ export default function ReportsPage() {
                   <span
                     className={cn(
                       "block text-[10px] uppercase font-bold leading-none",
-                      w.isToday ? "text-forest" : "text-slate-400"
+                      w.isToday
+                        ? "text-forest"
+                        : w.isWeekend
+                        ? "text-amber-600/80 font-extrabold"
+                        : "text-slate-400"
                     )}
                   >
                     {w.shortName}
                   </span>
-                  <span className="text-xs font-bold text-slate-700 mt-0.5 block leading-none">
+                  <span
+                    className={cn(
+                      "text-xs font-bold mt-0.5 block leading-none",
+                      w.isToday ? "text-forest" : "text-slate-700"
+                    )}
+                  >
                     {w.dayNumber}
                   </span>
                 </div>

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Habit, HabitLogEntry } from "@/types";
+import { useSettingsStore } from "@/lib/stores/settingsStore";
+import { computeWeekDays } from "@/lib/utils/date";
 import {
   Flame,
   Check,
@@ -51,36 +53,23 @@ export function HabitMatrix({
   onEditHabit,
   onDeleteHabit,
 }: HabitMatrixProps) {
-  // Compute the 7 days of the current week (Monday to Sunday) on client mount to avoid unstable prerender
+  const { settings } = useSettingsStore();
+  const startOfWeek = settings.startOfWeek || "monday";
+  const weekendDays = settings.weekendDays || ["saturday", "sunday"];
+
+  // Compute the 7 days of the current week on client mount to avoid unstable prerender
   const [weekDays, setWeekDays] = useState(STATIC_HABIT_DAYS);
 
   useEffect(() => {
-    const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
-
-    const jsDay = now.getDay();
-    const diffToMonday = jsDay === 0 ? -6 : 1 - jsDay;
-
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const days = ALL_WEEK_DAYS.map((dayName, idx) => {
-      const dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + idx);
-      const dateStr = dayDate.toISOString().split("T")[0];
-      const isToday = dateStr === todayStr;
-
-      return {
-        dayName,
-        shortName: dayName.slice(0, 3),
-        dayNumber: dayDate.getDate(),
-        dateStr,
-        isToday,
-      };
-    });
+    const days = computeWeekDays(startOfWeek, weekendDays).map((d) => ({
+      dayName: d.dayName,
+      shortName: d.shortName,
+      dayNumber: d.dayNum,
+      dateStr: d.dateStr,
+      isToday: d.isToday,
+    }));
     setWeekDays(days);
-  }, []);
+  }, [startOfWeek, weekendDays]);
 
   const getArchetypeIcon = (type: Habit["type"]) => {
     switch (type) {

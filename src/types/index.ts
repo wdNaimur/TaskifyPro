@@ -84,6 +84,16 @@ export interface HabitLogEntry {
   note?: string;        // optional reflection note
 }
 
+// ── Days of the Week ──────────────────────────────────────────────
+export type DayOfWeek =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
 // ── User Settings ─────────────────────────────────────────────────
 export interface UserSettings {
   dailyCapacity: number;       // max tasks per day (default: 5)
@@ -92,5 +102,6 @@ export interface UserSettings {
   longBreak: number;           // minutes (default: 15)
   longBreakInterval: number;   // sessions before long break (default: 4)
   soundscape: "none" | "rain" | "forest" | "cafe" | "white-noise";
-  startOfWeek: "monday" | "sunday";
+  startOfWeek: DayOfWeek;
+  weekendDays?: DayOfWeek[];
 }

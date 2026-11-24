@@ -16,6 +16,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   longBreakInterval: 4,        // Cycles before long break
   soundscape: "none",
   startOfWeek: "monday",
+  weekendDays: ["saturday", "sunday"],
 };
 
 export const DEFAULT_TASK_CONFIG = {
