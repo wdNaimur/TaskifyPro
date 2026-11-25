@@ -21,7 +21,7 @@ import { ArchetypeBadge } from "@/components/tasks/ArchetypeBadge";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { useToastStore } from "@/lib/stores/toastStore";
-import { computeWeekDays } from "@/lib/utils/date";
+import { computeWeekDays, formatLocalDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
 
 interface WeeklyHorizonTabProps {
@@ -96,7 +96,7 @@ export function WeeklyHorizonTab({
 
   useEffect(() => {
     setWeekDays(computeWeekDays(startOfWeek, weekendDays));
-    setTodayStr(new Date().toISOString().split("T")[0]);
+    setTodayStr(formatLocalDate());
 
     try {
       const saved = localStorage.getItem("taskify_weekly_grid_cols");

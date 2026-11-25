@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { useHabitStore } from "@/lib/stores/habitStore";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
-import { computeWeekDays } from "@/lib/utils/date";
+import { computeWeekDays, formatLocalDate } from "@/lib/utils/date";
 import {
   BarChart3,
   TrendingUp,
@@ -98,7 +98,8 @@ export default function ReportsPage() {
     const computed = weekDays.map((day) => {
       // Completed tasks for this day (based on scheduledDate or updatedAt)
       const dayCompleted = completedTasks.filter((t) => {
-        const d = (t.updatedAt || t.createdAt || "").split("T")[0];
+        const rawDate = t.updatedAt || t.createdAt;
+        const d = rawDate ? formatLocalDate(new Date(rawDate)) : "";
         return d === day.dateStr || t.scheduledDate === day.dateStr;
       }).length;
 

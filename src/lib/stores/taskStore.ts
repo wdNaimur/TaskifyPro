@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Task, TaskStatus } from "@/types";
 import { createDevTestTasks } from "@/lib/constants";
+import { formatLocalDate } from "@/lib/utils/date";
 import { useToastStore } from "./toastStore";
 import { triggerConfetti } from "@/lib/utils/confetti";
 
@@ -140,7 +141,7 @@ export const useTaskStore = create<TaskState>()(
               ? {
                   ...task,
                   status: "scheduled",
-                  scheduledDate: new Date().toISOString().split("T")[0],
+                  scheduledDate: formatLocalDate(),
                   updatedAt: new Date().toISOString(),
                 }
               : task

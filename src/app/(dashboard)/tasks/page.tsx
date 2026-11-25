@@ -21,6 +21,7 @@ import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskModal } from "@/components/manage/TaskModal";
 import { useHydrated } from "@/lib/hooks/useHydrated";
+import { formatLocalDate } from "@/lib/utils/date";
 import { Task } from "@/types";
 
 export default function TasksPage() {
@@ -50,7 +51,7 @@ export default function TasksPage() {
   const [todayStr, setTodayStr] = useState<string>("");
 
   useEffect(() => {
-    setTodayStr(new Date().toISOString().split("T")[0]);
+    setTodayStr(formatLocalDate());
   }, []);
 
   // Filter tasks: Synchronized strictly with today's date

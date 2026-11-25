@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Habit, HabitLogEntry, HabitType } from "@/types";
+import { formatLocalDate } from "@/lib/utils/date";
 import { useToastStore } from "./toastStore";
 
 export interface WeeklyReflection {
@@ -28,10 +29,10 @@ interface HabitState {
 // Calculate consecutive-day streak ending today or yesterday
 function calculateStreak(habitId: string, logs: Record<string, HabitLogEntry>): number {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setHours(12, 0, 0, 0);
 
   const getLogDone = (d: Date): boolean => {
-    const key = `${habitId}_${d.toISOString().split("T")[0]}`;
+    const key = `${habitId}_${formatLocalDate(d)}`;
     return !!logs[key]?.done;
   };
 
@@ -99,13 +100,13 @@ const INITIAL_HABITS: Habit[] = [
 function generateInitialLogs(): Record<string, HabitLogEntry> {
   const logs: Record<string, HabitLogEntry> = {};
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setHours(12, 0, 0, 0);
 
   // Past 6 days
   for (let i = 1; i <= 6; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = formatLocalDate(d);
 
     // Seed habit-1 (Hydration)
     logs[`habit-1_${dateStr}`] = {

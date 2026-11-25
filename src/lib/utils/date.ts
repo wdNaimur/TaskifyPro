@@ -42,15 +42,28 @@ export interface WeekDayInfo {
 }
 
 /**
+ * Formats a Date object to a local 'YYYY-MM-DD' calendar date string.
+ * Unlike date.toISOString().split('T')[0] which converts to UTC and shifts dates
+ * backwards or forwards in non-UTC timezones, this uses the user's local year,
+ * month, and day.
+ */
+export function formatLocalDate(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Computes the 7 days of the current week starting on the user's preferred `startOfWeek`.
- * Correctly handles weekend designations from `weekendDays`.
+ * Correctly handles weekend designations from `weekendDays` and timezone-safe local dates.
  */
 export function computeWeekDays(
   startOfWeek: DayOfWeek = "monday",
   weekendDays: DayOfWeek[] = ["saturday", "sunday"]
 ): WeekDayInfo[] {
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = formatLocalDate(now);
 
   const currentJsDay = now.getDay();
   const targetJsDay = DAY_OF_WEEK_TO_JS_DAY[startOfWeek] ?? 1;
@@ -62,7 +75,8 @@ export function computeWeekDays(
 
   const startDay = new Date(now);
   startDay.setDate(now.getDate() - diff);
-  startDay.setHours(0, 0, 0, 0);
+  // Noon anchor prevents daylight saving time (DST) edge cases from crossing midnight
+  startDay.setHours(12, 0, 0, 0);
 
   const result: WeekDayInfo[] = [];
 
@@ -70,7 +84,7 @@ export function computeWeekDays(
     const d = new Date(startDay);
     d.setDate(startDay.getDate() + i);
 
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = formatLocalDate(d);
     const jsDay = d.getDay();
     const dayId = JS_DAY_TO_DAY_OF_WEEK[jsDay];
     const dayItem = ALL_DAYS_OF_WEEK.find((item) => item.id === dayId);

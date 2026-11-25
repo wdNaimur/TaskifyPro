@@ -5,6 +5,7 @@ import { DEFAULT_USER_SETTINGS } from "@/lib/constants";
 import { useToastStore } from "./toastStore";
 import { useTaskStore } from "./taskStore";
 import { useHabitStore } from "./habitStore";
+import { formatLocalDate } from "@/lib/utils/date";
 
 export interface ExtendedSettings extends UserSettings {
   autoStartBreaks: boolean;
@@ -66,7 +67,7 @@ export const useSettingsStore = create<SettingsState>()(
           downloadAnchor.setAttribute("href", dataStr);
           downloadAnchor.setAttribute(
             "download",
-            `taskify_backup_${new Date().toISOString().split("T")[0]}.json`
+            `taskify_backup_${formatLocalDate()}.json`
           );
           document.body.appendChild(downloadAnchor);
           downloadAnchor.click();

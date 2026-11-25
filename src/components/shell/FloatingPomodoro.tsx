@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { usePomodoroTicker } from "@/lib/hooks/usePomodoroTicker";
+import { formatLocalDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
 
 export function FloatingPomodoro() {
@@ -16,7 +17,7 @@ export function FloatingPomodoro() {
   const [todayStr, setTodayStr] = useState<string>("");
 
   useEffect(() => {
-    setTodayStr(new Date().toISOString().split("T")[0]);
+    setTodayStr(formatLocalDate());
   }, []);
 
   const {

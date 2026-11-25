@@ -8,6 +8,7 @@ import { WeeklyHorizonTab } from "@/components/manage/WeeklyHorizonTab";
 import { BacklogTab } from "@/components/manage/BacklogTab";
 import { TaskModal } from "@/components/manage/TaskModal";
 import { Task } from "@/types";
+import { formatLocalDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
 
 export default function ManagePage() {
@@ -29,7 +30,7 @@ export default function ManagePage() {
   const [todayStr, setTodayStr] = useState<string>("");
 
   useEffect(() => {
-    setTodayStr(new Date().toISOString().split("T")[0]);
+    setTodayStr(formatLocalDate());
   }, []);
 
   // Filter tasks into Today vs Backlog (strictly synchronized with today's scheduled date)

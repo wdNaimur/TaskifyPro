@@ -6,6 +6,7 @@ import { HabitMatrix } from "@/components/habits/HabitMatrix";
 import { WeeklyReflectionLedger } from "@/components/habits/WeeklyReflectionLedger";
 import { HabitModal } from "@/components/habits/HabitModal";
 import { Habit } from "@/types";
+import { formatLocalDate } from "@/lib/utils/date";
 import {
   Sparkles,
   Plus,
@@ -49,7 +50,7 @@ export default function HabitsPage() {
 
   useEffect(() => {
     setCurrentWeekKey(getCurrentWeekKey());
-    setTodayStr(new Date().toISOString().split("T")[0]);
+    setTodayStr(formatLocalDate());
   }, []);
 
   const todayCompletedCount = useMemo(() => {

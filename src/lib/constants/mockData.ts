@@ -1,4 +1,5 @@
 import { Task } from "@/types";
+import { formatLocalDate } from "@/lib/utils/date";
 
 /**
  * ─────────────────────────────────────────────────────────────────
@@ -14,7 +15,7 @@ export const ENABLE_DEMO_SEED_DATA = false;
  */
 export function createDevTestTasks(): Task[] {
   const todayStr = typeof window !== "undefined"
-    ? new Date().toISOString().split("T")[0]
+    ? formatLocalDate()
     : "2026-11-24";
 
   return [

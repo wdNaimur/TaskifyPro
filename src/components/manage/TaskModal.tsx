@@ -18,6 +18,7 @@ import { Task, TaskArchetype, Priority } from "@/types";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { toast } from "@/lib/stores/toastStore";
 import { DEFAULT_TASK_CONFIG } from "@/lib/constants";
+import { formatLocalDate } from "@/lib/utils/date";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 
@@ -95,7 +96,7 @@ export function TaskModal({
 
   // Initialize today's date on client mount to avoid unstable prerender
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = formatLocalDate();
     setTodayStr(today);
     if (!scheduledDate) {
       setScheduledDate(initialScheduledDate || today);
@@ -154,7 +155,7 @@ export function TaskModal({
         setTargetCount(taskToEdit.targetCount || DEFAULT_TASK_CONFIG.defaultTargetCount);
         setUnit(taskToEdit.unit || DEFAULT_TASK_CONFIG.defaultUnit);
         setSubItems(taskToEdit.subItems ? [...taskToEdit.subItems] : []);
-        setScheduledDate(taskToEdit.scheduledDate || new Date().toISOString().split("T")[0]);
+        setScheduledDate(taskToEdit.scheduledDate || formatLocalDate());
         setIsScheduledToday(taskToEdit.status !== "staged");
       } else {
         // Defaults for new task: Checklist
@@ -165,7 +166,7 @@ export function TaskModal({
         setTargetCount(DEFAULT_TASK_CONFIG.defaultTargetCount);
         setUnit(DEFAULT_TASK_CONFIG.defaultUnit);
         setSubItems([]);
-        const targetDate = initialScheduledDate || new Date().toISOString().split("T")[0];
+        const targetDate = initialScheduledDate || formatLocalDate();
         setScheduledDate(targetDate);
         const shouldSchedule =
           defaultScheduleToday !== undefined ? defaultScheduleToday : !isTargetDateFull;
