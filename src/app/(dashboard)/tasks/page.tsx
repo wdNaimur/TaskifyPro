@@ -19,6 +19,7 @@ import { useTaskStore } from "@/lib/stores/taskStore";
 import { usePomodoroStore } from "@/lib/stores/pomodoroStore";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskModal } from "@/components/manage/TaskModal";
+import { TodayHabitsSection } from "@/components/tasks/TodayHabitsSection";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { formatLocalDate } from "@/lib/utils/date";
 
@@ -253,7 +254,8 @@ export default function TasksPage() {
             <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
           </div>
         ) : todayTasks.length === 0 ? (
-          /* Empty State */
+          <>
+          {/* Empty State */}
           <div className="liquid-glass-light rounded-3xl p-10 text-center border border-white/80 shadow-xs space-y-3">
             <Calendar className="h-10 w-10 text-slate-300 mx-auto" />
             <h3 className="text-base font-bold text-slate-800">
@@ -291,6 +293,10 @@ export default function TasksPage() {
               )}
             </div>
           </div>
+
+          {/* Daily Habits & Routines below empty tasks card */}
+          <TodayHabitsSection todayStr={todayStr} />
+          </>
         ) : (
           <>
             {/* All Done for Today Celebration Card */}
@@ -366,6 +372,9 @@ export default function TasksPage() {
                 <span>Add task to fill Slot {todayTasks.length + 1} of 5</span>
               </button>
             )}
+
+            {/* ── Daily Habits & Routines Section (Layout 1: Positioned below To-Do tasks) ── */}
+            <TodayHabitsSection todayStr={todayStr} />
 
             {/* Completed Tasks Section */}
             {completedTasks.length > 0 && (
