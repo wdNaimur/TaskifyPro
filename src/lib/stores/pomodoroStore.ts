@@ -134,7 +134,7 @@ export const usePomodoroStore = create<PomodoroState>()(
 
       setFocusMinutes: (minutes: number) => {
         const safeMinutes = Math.max(1, Math.min(180, minutes));
-        const { isRunning, isSessionActive } = get();
+        const { isRunning } = get();
         set({
           focusMinutes: safeMinutes,
           // If not actively running a session, sync timeLeft to new duration

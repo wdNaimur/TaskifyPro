@@ -15,7 +15,7 @@ import {
   ArrowDown,
   type LucideIcon,
 } from "lucide-react";
-import { Task } from "@/types";
+import { Task, DayOfWeek } from "@/types";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
 import { ArchetypeBadge } from "@/components/tasks/ArchetypeBadge";
 import { useTaskStore } from "@/lib/stores/taskStore";
@@ -74,6 +74,8 @@ const GRID_CONTAINER_CLASSES: Record<GridColumnsMode, string> = {
   1: "grid grid-cols-1 gap-3.5 max-w-3xl mx-auto",
 };
 
+const DEFAULT_WEEKEND_DAYS: DayOfWeek[] = ["saturday", "sunday"];
+
 export function WeeklyHorizonTab({
   tasks,
   onAddTaskForDate,
@@ -83,7 +85,7 @@ export function WeeklyHorizonTab({
 }: WeeklyHorizonTabProps) {
   const { settings } = useSettingsStore();
   const startOfWeek = settings.startOfWeek || "monday";
-  const weekendDays = settings.weekendDays || ["saturday", "sunday"];
+  const weekendDays = settings.weekendDays || DEFAULT_WEEKEND_DAYS;
 
   const [weekDays, setWeekDays] = useState(() => {
     // Static initial state for SSR

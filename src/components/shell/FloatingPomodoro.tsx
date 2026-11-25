@@ -208,7 +208,11 @@ export function FloatingPomodoro() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                isRunning ? pauseTimer() : startTimer();
+                if (isRunning) {
+                  pauseTimer();
+                } else {
+                  startTimer();
+                }
               }}
               className={cn(
                 "relative z-10 flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-md transition-all active:scale-90 hover:scale-105 cursor-pointer shrink-0 ml-0.5",

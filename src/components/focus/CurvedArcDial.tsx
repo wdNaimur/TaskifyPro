@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 interface CurvedArcDialProps {

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Habit, HabitLogEntry, HabitType } from "@/types";
+import { Habit, HabitLogEntry } from "@/types";
 import { formatLocalDate } from "@/lib/utils/date";
 import { useToastStore } from "./toastStore";
 

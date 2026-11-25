@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "@/components/ui/Modal";
-import { Keyboard, Command, Navigation, Zap, Timer } from "lucide-react";
+import { Keyboard, Navigation, Zap, Timer } from "lucide-react";
 
 interface KeyboardShortcutsModalProps {
   isOpen: boolean;

@@ -13,7 +13,6 @@ import {
   Flame,
   CheckCircle2,
   CalendarCheck,
-  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,11 +44,10 @@ export default function HabitsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
 
-  const [currentWeekKey, setCurrentWeekKey] = useState<string>("");
+  const [currentWeekKey] = useState<string>(() => getCurrentWeekKey());
   const [todayStr, setTodayStr] = useState<string>("");
 
   useEffect(() => {
-    setCurrentWeekKey(getCurrentWeekKey());
     setTodayStr(formatLocalDate());
   }, []);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Habit, HabitLogEntry } from "@/types";
+import { Habit, HabitLogEntry, DayOfWeek } from "@/types";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { computeWeekDays } from "@/lib/utils/date";
 import {
@@ -45,6 +45,8 @@ const STATIC_HABIT_DAYS = ALL_WEEK_DAYS.map((dayName, idx) => ({
   isToday: false,
 }));
 
+const DEFAULT_WEEKEND_DAYS: DayOfWeek[] = ["saturday", "sunday"];
+
 export function HabitMatrix({
   habits,
   logs,
@@ -55,7 +57,7 @@ export function HabitMatrix({
 }: HabitMatrixProps) {
   const { settings } = useSettingsStore();
   const startOfWeek = settings.startOfWeek || "monday";
-  const weekendDays = settings.weekendDays || ["saturday", "sunday"];
+  const weekendDays = settings.weekendDays || DEFAULT_WEEKEND_DAYS;
 
   // Compute the 7 days of the current week on client mount to avoid unstable prerender
   const [weekDays, setWeekDays] = useState(STATIC_HABIT_DAYS);
@@ -122,8 +124,6 @@ export function HabitMatrix({
             const log = logs[`${habit.id}_${d.dateStr}`];
             return !!log?.done;
           }).length;
-
-          const completionPct = Math.round((completedThisWeek / 7) * 100);
 
           return (
             <div

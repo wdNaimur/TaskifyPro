@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Task, Priority } from "@/types";
-import { ChevronDown, Check, Zap, Hash, Clock, Plus, X, AlertCircle } from "lucide-react";
+import { ChevronDown, Check, Plus, X, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +45,7 @@ const PRIORITY_GROUPS: {
 export function FocusTaskDropdown({
   tasks,
   activeTaskId,
-  activeTaskTitle,
+  activeTaskTitle: _activeTaskTitle,
   onSelectTask,
   onAddNewTask,
   hasError = false,

@@ -6,21 +6,19 @@ import { useHabitStore } from "@/lib/stores/habitStore";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { computeWeekDays, formatLocalDate } from "@/lib/utils/date";
 import {
-  BarChart3,
   TrendingUp,
   Clock,
   Target,
-  Flame,
   CheckCircle2,
-  Calendar,
-  Sparkles,
   Zap,
   Hash,
   ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
-import { Priority } from "@/types";
+import { Priority, DayOfWeek } from "@/types";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_WEEKEND_DAYS: DayOfWeek[] = ["saturday", "sunday"];
 
 const ALL_WEEK_DAYS = [
   "Monday",
@@ -50,7 +48,7 @@ export default function ReportsPage() {
   const { settings } = useSettingsStore();
 
   const startOfWeek = settings?.startOfWeek || "monday";
-  const weekendDays = settings?.weekendDays || ["saturday", "sunday"];
+  const weekendDays = settings?.weekendDays || DEFAULT_WEEKEND_DAYS;
 
   // ── Metrics Calculation ──────────────────────────────────────────
   const completedTasks = useMemo(() => tasks.filter((t) => t.status === "done"), [tasks]);

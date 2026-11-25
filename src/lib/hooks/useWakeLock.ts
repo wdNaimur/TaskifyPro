@@ -53,7 +53,7 @@ export function useWakeLock(enabled: boolean = true): UseWakeLockReturn {
         });
 
         return true;
-      } catch (err: unknown) {
+      } catch {
         // AbortError can happen if document is hidden or phone is in ultra low power mode
         setIsActive(false);
         sentinelRef.current = null;

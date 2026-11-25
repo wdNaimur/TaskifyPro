@@ -11,7 +11,6 @@ import {
   Settings,
   ChevronLeft,
   X,
-  Flame,
   CheckCheck,
   type LucideIcon,
 } from "lucide-react";

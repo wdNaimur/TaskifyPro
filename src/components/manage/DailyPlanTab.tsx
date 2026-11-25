@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, GripVertical } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
 import { Reorder } from "framer-motion";
 import { Task } from "@/types";
 import { TaskCard } from "@/components/tasks/TaskCard";
@@ -93,12 +93,22 @@ export function DailyPlanTab({
             <div className="h-24 bg-white/70 rounded-2xl border border-white/80 shadow-xs" />
           </div>
         ) : tasks.length === 0 ? (
-          <div className="liquid-glass-light rounded-3xl p-10 text-center border border-white/80">
-            <Calendar className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-700">No tasks allocated for today</p>
-            <p className="text-xs text-slate-400 mt-1">
-              Click &quot;Add Task&quot; or promote from your Backlog
-            </p>
+          <div className="liquid-glass-light rounded-3xl p-10 text-center border border-white/80 space-y-3">
+            <Calendar className="h-8 w-8 text-slate-300 mx-auto" />
+            <div>
+              <p className="text-sm font-semibold text-slate-700">No tasks allocated for today</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Add a task to your daily plan or promote from your Backlog
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenCreateModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-forest hover:bg-forest-light text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Task</span>
+            </button>
           </div>
         ) : onReorder ? (
           <Reorder.Group

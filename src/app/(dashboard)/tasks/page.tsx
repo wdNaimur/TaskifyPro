@@ -13,7 +13,6 @@ import {
   ArrowUpRight,
   Lock,
   FlaskConical,
-  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTaskStore } from "@/lib/stores/taskStore";
@@ -22,7 +21,6 @@ import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskModal } from "@/components/manage/TaskModal";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { formatLocalDate } from "@/lib/utils/date";
-import { Task } from "@/types";
 
 export default function TasksPage() {
   const router = useRouter();
