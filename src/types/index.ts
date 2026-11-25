@@ -50,6 +50,7 @@ export interface Task {
   completedMinutes?: number;    // for "timed" progress completed (e.g. 15 min)
 
   scheduledDate?: string;       // ISO date string "YYYY-MM-DD"
+  scheduledStartTime?: string;  // "HH:MM" — start time within the day (calendar view)
   slotIndex?: number;           // 0-indexed position in the day's 5 slots
 
   createdAt: string;            // ISO timestamp
@@ -104,4 +105,5 @@ export interface UserSettings {
   soundscape: "none" | "rain" | "forest" | "cafe" | "white-noise";
   startOfWeek: DayOfWeek;
   weekendDays?: DayOfWeek[];
+  dayStartHour: number;        // 0–23, hour the weekly calendar day starts (default 6)
 }

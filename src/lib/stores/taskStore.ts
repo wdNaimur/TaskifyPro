@@ -8,8 +8,8 @@ import { triggerConfetti } from "@/lib/utils/confetti";
 
 interface TaskState {
   tasks: Task[];
-  selectedTab: "daily" | "weekly" | "backlog";
-  setSelectedTab: (tab: "daily" | "weekly" | "backlog") => void;
+  selectedTab: "daily" | "weekly" | "calendar" | "backlog";
+  setSelectedTab: (tab: "daily" | "weekly" | "calendar" | "backlog") => void;
 
   // CRUD Operations
   addTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => void;

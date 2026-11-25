@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sliders, Calendar, ChevronDown, Check } from "lucide-react";
+import { Sliders, Calendar, Clock, ChevronDown, Check } from "lucide-react";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { DayOfWeek } from "@/types";
 import { ALL_DAYS_OF_WEEK } from "@/lib/utils/date";
@@ -256,6 +256,39 @@ export function CalendarSettings() {
             Days marked as weekends receive distinct amber badges and rest tints in Weekly Horizon.
           </p>
         </div>
+      </div>
+
+      {/* Day Start Time Setting */}
+      <div className="bg-white/70 p-4 rounded-2xl border border-white/90 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-forest" />
+            <span className="text-xs font-bold text-slate-700">Day Start Time</span>
+          </div>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-forest text-white">
+            {settings.dayStartHour ?? 6}:00 {(settings.dayStartHour ?? 6) < 12 ? "AM" : "PM"}
+          </span>
+        </div>
+        <div className="flex gap-1.5 pt-1">
+          {[4, 5, 6, 7, 8, 9, 10].map((hour) => (
+            <button
+              key={hour}
+              type="button"
+              onClick={() => updateSettings({ dayStartHour: hour })}
+              className={cn(
+                "flex-1 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                (settings.dayStartHour ?? 6) === hour
+                  ? "bg-forest text-white border-forest shadow-xs"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              {hour}{hour < 12 ? "a" : "p"}
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-slate-400 pt-0.5">
+          Sets the first visible hour in your Weekly Calendar view.
+        </p>
       </div>
     </div>
   );

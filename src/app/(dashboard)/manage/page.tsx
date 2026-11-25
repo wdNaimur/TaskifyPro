@@ -5,6 +5,7 @@ import { Plus, FlaskConical } from "lucide-react";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import { DailyPlanTab } from "@/components/manage/DailyPlanTab";
 import { WeeklyHorizonTab } from "@/components/manage/WeeklyHorizonTab";
+import { WeeklyCalendarView } from "@/components/manage/WeeklyCalendarView";
 import { BacklogTab } from "@/components/manage/BacklogTab";
 import { TaskModal } from "@/components/manage/TaskModal";
 import { Task } from "@/types";
@@ -103,6 +104,17 @@ export default function ManagePage() {
               Weekly Horizon
             </button>
             <button
+              onClick={() => setSelectedTab("calendar")}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all",
+                selectedTab === "calendar"
+                  ? "text-slate-900 shadow-xs bg-white"
+                  : "text-slate-500 hover:text-slate-800"
+              )}
+            >
+              Calendar
+            </button>
+            <button
               onClick={() => setSelectedTab("backlog")}
               className={cn(
                 "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all",
@@ -159,6 +171,26 @@ export default function ManagePage() {
           onDeleteTask={deleteTask}
           onMoveTaskDate={(taskId, dateStr) => {
             updateTask(taskId, { scheduledDate: dateStr, status: "scheduled" });
+          }}
+        />
+      )}
+
+      {selectedTab === "calendar" && (
+        <WeeklyCalendarView
+          tasks={tasks}
+          onAddTaskForDate={(dateStr) => {
+            setSelectedScheduleDate(dateStr);
+            setTaskToEdit(null);
+            setIsModalOpen(true);
+          }}
+          onEditTask={handleOpenEditModal}
+          onDeleteTask={deleteTask}
+          onMoveTaskTime={(taskId, dateStr, startTime) => {
+            updateTask(taskId, {
+              scheduledDate: dateStr,
+              scheduledStartTime: startTime,
+              status: "scheduled",
+            });
           }}
         />
       )}

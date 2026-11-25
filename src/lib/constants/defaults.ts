@@ -17,6 +17,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   soundscape: "none",
   startOfWeek: "monday",
   weekendDays: ["saturday", "sunday"],
+  dayStartHour: 6,
 };
 
 export const DEFAULT_TASK_CONFIG = {
